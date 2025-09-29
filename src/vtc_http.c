@@ -1646,20 +1646,21 @@ cmd_http_shutdown(CMD_ARGS)
 	vtc_log(vl, 4, "Shutting down fd (%s): %d", str[how], hp->sess->fd);
 	i = shutdown(hp->sess->fd, how);
 	j = errno;
-	if (i < 0 && j == ENOTCONN && notconn)
+	if (i < 0 && j == ENOTCONN && notconn) {
 		vtc_log(vl, 3,
 		    "Shutdown(%s) socket fd %d, (was already closed)",
 		    str[how], hp->sess->fd
 		);
-	else if (i < 0 && j == ENOTCONN && notconn)
+	} else if (i < 0) {
 		vtc_log(vl, hp->fatal,
 		    "Shutdown(%s) socket fd %d, failed, %s",
 		    str[how], hp->sess->fd, strerror(j)
 		);
-	else
+	} else {
 		vtc_log(vl, 3, "Shutdown(%s) socket fd %d",
 		    str[how], hp->sess->fd
 		);
+	}
 }
 
 /* SECTION: client-server.spec.fatal
