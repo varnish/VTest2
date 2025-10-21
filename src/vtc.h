@@ -137,6 +137,8 @@ void vtc_proxy_tlv(struct vtclog *vl, struct vsb *vsb, const char *kva);
 int vtc_send_proxy(int fd, int version, const struct suckaddr *sac,
     const struct suckaddr *sas, struct vsb *tlb);
 
+void add_extension(const char *name);
+void add_cmd(const char *name, cmd_f *cmd, unsigned flags);
 struct cmds *find_cmd(const char *name);
 int exec_file(const char *fn, const char *script, const char *tmpdir,
     char *logbuf, unsigned loglen);

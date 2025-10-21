@@ -33,6 +33,8 @@
 #include <sys/wait.h>
 
 #include <ctype.h>
+#include <dlfcn.h>
+#include <fcntl.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,6 +45,7 @@
 #include "vtc_log.h"
 
 #include "vav.h"
+#include "vsub.h"
 #include "vrnd.h"
 
 #define		MAX_TOKENS		200
@@ -75,7 +78,7 @@ static const char *tfn;
 
 static VTAILQ_HEAD(,cmds) cmd_list = VTAILQ_HEAD_INITIALIZER(cmd_list);
 
-static void
+void
 add_cmd(const char *name, cmd_f *cmd, unsigned flags)
 {
 	struct cmds *cp;
@@ -95,6 +98,19 @@ struct cmds *
 find_cmd(const char *name)
 {
 	struct cmds *cp;
+	char buf[BUFSIZ];
+
+	VTAILQ_FOREACH(cp, &cmd_list, list) {
+		CHECK_OBJ_NOTNULL(cp, CMDS_MAGIC);
+		if (!strcmp(name, cp->name))
+			return (cp);
+	}
+
+	bprintf(buf, "libvtest_ext_%s.so", name);
+	void *dlp = dlopen(buf, RTLD_NOW);
+	if (dlp == NULL)
+		return (NULL);
+	vtc_log(vltop, 4, "Autoloaded %s", buf);
 
 	VTAILQ_FOREACH(cp, &cmd_list, list) {
 		CHECK_OBJ_NOTNULL(cp, CMDS_MAGIC);
@@ -110,6 +126,81 @@ init_cmd_list(void)
 #define CMD_GLOBAL(n) add_cmd(#n, cmd_##n, CMDS_F_GLOBAL);
 #define CMD_TOP(n) add_cmd(#n, cmd_##n, CMDS_F_NONE);
 #include "cmds.h"
+}
+
+/**********************************************************************
+ * Extensions
+ *
+ * We need to open the extension while doing argument processing
+ * in order for relative paths to work.  This complicates the
+ * VSUB_closefrom() a little bit.
+ */
+       
+struct extension {
+       unsigned			magic;
+#define EXTENSION_MAGIC		0x69e788db
+       VTAILQ_ENTRY(extension)	list;
+       const char		*name;
+       int			fd;
+};
+
+static VTAILQ_HEAD(,extension) extension_list =
+    VTAILQ_HEAD_INITIALIZER(extension_list);
+
+static int max_ext_fd = STDERR_FILENO + 1;
+
+void
+add_extension(const char *name)
+{
+	int fd;
+	struct extension *ep;
+
+	AN(name);
+	fd = open(name, O_RDONLY);
+	if (fd < 0) {
+		fprintf(stderr, "Cannot open extension file '%s': %s\n",
+		    name, strerror(errno));
+		exit(2);
+	}
+
+	ALLOC_OBJ(ep, EXTENSION_MAGIC);
+	AN(ep);
+	ep->name = strdup(name);
+	AN(ep->name);
+	ep->fd = fd;
+	if (fd > max_ext_fd)
+		max_ext_fd = fd;
+	VTAILQ_INSERT_HEAD(&extension_list, ep, list);
+}
+
+static int
+init_extensions(void)
+{
+	struct extension *ep;
+
+	VTAILQ_FOREACH(ep, &extension_list, list) {
+		CHECK_OBJ_NOTNULL(ep, EXTENSION_MAGIC);
+		void *dlp = fdlopen(ep->fd, RTLD_NOW);
+		if (dlp == NULL) {
+			vtc_log(vltop, 1, "Cannot dlopen '%s': %s\n",
+			    ep->name, dlerror());
+			return (1);
+		}
+	}
+	return (0);
+}
+
+static int
+fd_is_extension(int fd)
+{
+	struct extension *ep;
+
+	VTAILQ_FOREACH(ep, &extension_list, list) {
+		CHECK_OBJ_NOTNULL(ep, EXTENSION_MAGIC);
+		if (fd == ep->fd)
+			return (1);
+	}
+	return (0);
 }
 
 /**********************************************************************
@@ -536,7 +627,8 @@ parse_string(struct vtclog *vl, void *priv, const char *spec)
 
 		if (cp == NULL || cp->name == NULL) {
 			cp = find_cmd(token_s[0]);
-			if (vl->cmds != NULL && !(cp->flags & CMDS_F_GLOBAL))
+			if (cp != NULL && vl->cmds != NULL &&
+			    !(cp->flags & CMDS_F_GLOBAL))
 				cp = NULL;
 		}
 
@@ -621,10 +713,17 @@ exec_file(const char *fn, const char *script, const char *tmpdir,
 	FILE *f;
 	struct vsb *vsb;
 	const char *p;
+	int fd;
 
 	AN(tmpdir);
 
 	(void)signal(SIGPIPE, SIG_IGN);
+
+	for (fd = STDERR_FILENO + 1; fd < max_ext_fd; fd++) {
+		if (!fd_is_extension(fd))
+			(void)close(fd);
+	}
+	VSUB_closefrom(max_ext_fd + 1);
 
 	PTOK(pthread_mutex_init(&vtc_vrnd_mtx, NULL));
 	VRND_Lock = vtc_vrnd_lock;
@@ -639,6 +738,10 @@ exec_file(const char *fn, const char *script, const char *tmpdir,
 	vtc_log(vltop, 1, "TEST %s starting", fn);
 
 	init_cmd_list();
+	if (init_extensions()) {
+		vtc_error = 2;
+		return (fail_out());
+	}
 	init_macro();
 	init_server();
 	init_syslog();

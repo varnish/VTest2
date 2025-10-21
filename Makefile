@@ -22,7 +22,7 @@ DEPS=	lib/*.h \
 FLAGS=	-O2 -Wall -Werror
 
 CFLAGS=  ${FLAGS}
-LDFLAGS= ${FLAGS} -s
+LDFLAGS= ${FLAGS} -rdynamic
 DEFINES=
 
 INCS=	-I. \

@@ -1,0 +1,5 @@
+vtest "extension non-use"
+
+feature vtest_cmd foo
+
+this should never get executed
