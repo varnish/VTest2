@@ -290,13 +290,13 @@ cmd_tunnel_resume(CMD_ARGS)
 }
 
 static const struct cmds tunnel_cmds[] = {
-#define CMD_TUNNEL(n) { #n, cmd_tunnel_##n },
+#define CMD_TUNNEL(n) { CMDS_MAGIC, #n, cmd_tunnel_##n },
 	CMD_TUNNEL(pause)
 	CMD_TUNNEL(send)
 	CMD_TUNNEL(recv)
 	CMD_TUNNEL(resume)
 #undef CMD_TUNNEL
-	{ NULL, NULL }
+	{ CMDS_MAGIC, NULL, NULL }
 };
 
 /**********************************************************************

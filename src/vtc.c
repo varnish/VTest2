@@ -85,15 +85,15 @@ struct macro {
 static VTAILQ_HEAD(,macro) macro_list = VTAILQ_HEAD_INITIALIZER(macro_list);
 
 static const struct cmds global_cmds[] = {
-#define CMD_GLOBAL(n) { #n, cmd_##n },
+#define CMD_GLOBAL(n) { CMDS_MAGIC, #n, cmd_##n },
 #include "cmds.h"
-	{ NULL, NULL }
+	{ CMDS_MAGIC, NULL, NULL }
 };
 
 static const struct cmds top_cmds[] = {
-#define CMD_TOP(n) { #n, cmd_##n },
+#define CMD_TOP(n) { CMDS_MAGIC, #n, cmd_##n },
 #include "cmds.h"
-	{ NULL, NULL }
+	{ CMDS_MAGIC, NULL, NULL }
 };
 
 /**********************************************************************/

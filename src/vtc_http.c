@@ -1832,7 +1832,7 @@ cmd_http_write_body(CMD_ARGS)
  */
 
 const struct cmds http_cmds[] = {
-#define CMD_HTTP(n) { #n, cmd_http_##n },
+#define CMD_HTTP(n) { CMDS_MAGIC, #n, cmd_http_##n },
 	/* session */
 	CMD_HTTP(accept)
 	CMD_HTTP(close)
@@ -1881,7 +1881,7 @@ const struct cmds http_cmds[] = {
 	CMD_HTTP(expect_close)
 	CMD_HTTP(expect_pattern)
 #undef CMD_HTTP
-	{ NULL, NULL }
+	{ CMDS_MAGIC, NULL, NULL }
 };
 
 static void

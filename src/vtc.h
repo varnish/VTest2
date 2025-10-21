@@ -62,6 +62,8 @@ struct suckaddr;
 typedef void cmd_f(CMD_ARGS);
 
 struct cmds {
+	unsigned	magic;
+#define CMDS_MAGIC	0x9ccc797d
 	const char	*name;
 	cmd_f		*cmd;
 };

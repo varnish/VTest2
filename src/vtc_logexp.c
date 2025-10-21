@@ -226,10 +226,10 @@ static cmd_f cmd_logexp_fail;
 static cmd_f cmd_logexp_abort;
 
 static const struct cmds logexp_cmds[] = {
-	{ "expect",		cmd_logexp_expect },
-	{ "fail",		cmd_logexp_fail },
-	{ "abort",		cmd_logexp_abort },
-	{ NULL,			NULL },
+	{ CMDS_MAGIC, "expect",		cmd_logexp_expect },
+	{ CMDS_MAGIC, "fail",		cmd_logexp_fail },
+	{ CMDS_MAGIC, "abort",		cmd_logexp_abort },
+	{ CMDS_MAGIC, NULL,		NULL },
 };
 
 static void

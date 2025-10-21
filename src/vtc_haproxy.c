@@ -346,11 +346,11 @@ cmd_haproxy_cli_expect(CMD_ARGS)
 }
 
 static const struct cmds haproxy_cli_cmds[] = {
-#define CMD_HAPROXY_CLI(n) { #n, cmd_haproxy_cli_##n },
+#define CMD_HAPROXY_CLI(n) { CMDS_MAGIC, #n, cmd_haproxy_cli_##n },
 	CMD_HAPROXY_CLI(send)
 	CMD_HAPROXY_CLI(expect)
 #undef CMD_HAPROXY_CLI
-	{ NULL, NULL }
+	{ CMDS_MAGIC, NULL, NULL }
 };
 
 /**********************************************************************

@@ -80,10 +80,10 @@ SYSLOGCMDS
 #undef CMD_SYSLOG
 
 static const struct cmds syslog_cmds[] = {
-#define CMD_SYSLOG(n) { #n, cmd_syslog_##n },
+#define CMD_SYSLOG(n) { CMDS_MAGIC, #n, cmd_syslog_##n },
 SYSLOGCMDS
 #undef CMD_SYSLOG
-	{ NULL, NULL }
+	{ CMDS_MAGIC, NULL, NULL }
 };
 
 static const char * const syslog_levels[] = {
