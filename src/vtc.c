@@ -70,6 +70,49 @@ vtc_vrnd_unlock(void)
 static const char *tfn;
 
 /**********************************************************************
+ * Commands
+ */
+
+static VTAILQ_HEAD(,cmds) cmd_list = VTAILQ_HEAD_INITIALIZER(cmd_list);
+
+static void
+add_cmd(const char *name, cmd_f *cmd, unsigned flags)
+{
+	struct cmds *cp;
+
+	AN(name);
+	AN(cmd);
+	ALLOC_OBJ(cp, CMDS_MAGIC);
+	AN(cp);
+	cp->name = strdup(name);
+	AN(cp->name);
+	cp->cmd = cmd;
+	cp->flags = flags;
+	VTAILQ_INSERT_HEAD(&cmd_list, cp, list);
+}
+
+struct cmds *
+find_cmd(const char *name)
+{
+	struct cmds *cp;
+
+	VTAILQ_FOREACH(cp, &cmd_list, list) {
+		CHECK_OBJ_NOTNULL(cp, CMDS_MAGIC);
+		if (!strcmp(name, cp->name))
+			break;
+	}
+	return (cp);
+}
+
+static void
+init_cmd_list(void)
+{
+#define CMD_GLOBAL(n) add_cmd(#n, cmd_##n, CMDS_F_GLOBAL);
+#define CMD_TOP(n) add_cmd(#n, cmd_##n, CMDS_F_NONE);
+#include "cmds.h"
+}
+
+/**********************************************************************
  * Macro facility
  */
 
@@ -83,40 +126,6 @@ struct macro {
 };
 
 static VTAILQ_HEAD(,macro) macro_list = VTAILQ_HEAD_INITIALIZER(macro_list);
-
-static struct cmds global_cmds[] = {
-#define CMD_GLOBAL(n) { CMDS_MAGIC, #n, cmd_##n },
-#include "cmds.h"
-	{ CMDS_MAGIC, NULL, NULL }
-};
-
-static struct cmds top_cmds[] = {
-#define CMD_TOP(n) { CMDS_MAGIC, #n, cmd_##n },
-#include "cmds.h"
-	{ CMDS_MAGIC, NULL, NULL }
-};
-
-struct cmds *
-find_cmd(const char *name)
-{
-	struct cmds *cp;
-
-	AN(name);
-	for (cp = global_cmds; cp->name; cp++) {
-		CHECK_OBJ_NOTNULL(cp, CMDS_MAGIC);
-		AN(cp->name);
-		if (!strcmp(cp->name, name))
-			return (cp);
-	}
-	for (cp = top_cmds; cp->name; cp++) {
-		CHECK_OBJ_NOTNULL(cp, CMDS_MAGIC);
-		AN(cp->name);
-		if (!strcmp(cp->name, name))
-			return (cp);
-	}
-	return (NULL);
-}
-
 
 /**********************************************************************/
 
@@ -516,21 +525,26 @@ parse_string(struct vtclog *vl, void *priv, const char *spec)
 			continue;
 		}
 
-		AN(vl->cmds);
-		for (cp = vl->cmds; cp->name != NULL; cp++)
-			if (!strcmp(token_s[0], cp->name))
-				break;
-
-		if (cp->name == NULL) {
-			for (cp = global_cmds; cp->name != NULL; cp++)
+		cp = NULL;
+		if (vl->cmds != NULL) {
+			for (cp = vl->cmds; cp->name != NULL; cp++) {
+				CHECK_OBJ_NOTNULL(cp, CMDS_MAGIC);
 				if (!strcmp(token_s[0], cp->name))
 					break;
+			}
 		}
 
-		if (cp->name == NULL)
+		if (cp == NULL || cp->name == NULL) {
+			cp = find_cmd(token_s[0]);
+			if (vl->cmds != NULL && !(cp->flags & CMDS_F_GLOBAL))
+				cp = NULL;
+		}
+
+		if (cp == NULL)
 			vtc_fatal(vl, "Unknown command: \"%s\"", token_s[0]);
 
-		assert(cp->cmd != NULL);
+		AN(cp->name);
+		AN(cp->cmd);
 		cp->cmd(token_s, priv, vl);
 	}
 }
@@ -540,11 +554,33 @@ parse_string(struct vtclog *vl, void *priv, const char *spec)
  */
 
 static void
-reset_cmds(const struct cmds *cmd)
+reset_cmd(const char *name)
 {
+	struct cmds *cp;
 
-	for (; cmd->name != NULL; cmd++)
-		cmd->cmd(NULL, NULL, NULL);
+	cp = find_cmd(name);
+	AN(cp);
+	cp->cmd(NULL, NULL, NULL);
+	cp->flags |= CMDS_F_SHUT;
+}
+
+static void
+reset_cmds(void)
+{
+	struct cmds *cp;
+
+	// Cleanup is easier if the sockets are closed first.
+	reset_cmd("client");
+	reset_cmd("server");
+
+	VTAILQ_FOREACH(cp, &cmd_list, list) {
+		CHECK_OBJ_NOTNULL(cp, CMDS_MAGIC);
+		if (cp->flags & CMDS_F_SHUT) {
+			cp->flags &= ~CMDS_F_SHUT;
+		} else {
+			cp->cmd(NULL, NULL, NULL);
+		}
+	}
 }
 
 /**********************************************************************
@@ -565,8 +601,7 @@ fail_out(void)
 	if (!vtc_stop)
 		vtc_stop = 1;
 	vtc_log(vltop, 1, "RESETTING after %s", tfn);
-	reset_cmds(global_cmds);
-	reset_cmds(top_cmds);
+	reset_cmds();
 	vtc_error |= old_err;
 
 	if (vtc_error)
@@ -600,10 +635,10 @@ exec_file(const char *fn, const char *script, const char *tmpdir,
 	vtc_loginit(logbuf, loglen);
 	vltop = vtc_logopen("top");
 	AN(vltop);
-	vtc_log_set_cmd(vltop, top_cmds);
 
 	vtc_log(vltop, 1, "TEST %s starting", fn);
 
+	init_cmd_list();
 	init_macro();
 	init_server();
 	init_syslog();

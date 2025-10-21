@@ -62,10 +62,16 @@ struct suckaddr;
 typedef void cmd_f(CMD_ARGS);
 
 struct cmds {
-	unsigned	magic;
-#define CMDS_MAGIC	0x9ccc797d
-	const char	*name;
-	cmd_f		*cmd;
+	unsigned		magic;
+#define CMDS_MAGIC		0x9ccc797d
+	const char		*name;
+	cmd_f			*cmd;
+	unsigned		flags;
+#define		CMDS_F_NONE		0x0
+#define		CMDS_F_GLOBAL		0x1
+#define		CMDS_F_SHUT		0x2
+	VTAILQ_ENTRY(cmds)	list;
+
 };
 
 void parse_string(struct vtclog *vl, void *priv, const char *spec);
