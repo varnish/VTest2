@@ -46,6 +46,8 @@
 #  include <sys/personality.h>
 #endif
 
+#include <openssl/ssl.h>
+
 #include "vtc.h"
 
 #include "vfil.h"
@@ -633,6 +635,12 @@ cmd_feature(CMD_ARGS)
 		FEATURE("sanitizer", sanitizer);
 		FEATURE("workspace_emulator", workspace_emulator);
 		FEATURE("abstract_uds", abstract_uds_works());
+		FEATURE("tls", 1);
+#if defined(TLS1_3_VERSION) || OPENSSL_VERSION_NUMBER >= 0x10101000L
+		FEATURE("tls_1_3", 1);
+#else
+		FEATURE("tls_1_3", 0);
+#endif
 
 		if (!strcmp(feat, "cmd")) {
 			good = 1;
