@@ -1,0 +1,41 @@
+/*
+ * TLS Alert messages
+ *
+ * https://datatracker.ietf.org/doc/html/rfc8446#appendix-B.1
+ *
+ */
+
+ALERT("close_notify", 0)
+ALERT("end_of_early_data", 1)
+ALERT("unexpected_message", 10)
+ALERT("bad_record_mac", 20)
+ALERT("decryption_failed", 21)
+ALERT("record_overflow", 22)
+ALERT("decompression_failure", 30)
+ALERT("handshake_failure", 40)
+ALERT("bad_certificate", 42)
+ALERT("unsupported_certificate", 43)
+ALERT("certificate_revoked", 44)
+ALERT("certificate_expired", 45)
+ALERT("certificate_unknown", 46)
+ALERT("illegal_parameter", 47)
+ALERT("unknown_ca", 48)
+ALERT("access_denied", 49)
+ALERT("decode_error", 50)
+ALERT("decrypt_error", 51)
+ALERT("export_restriction", 60)
+ALERT("protocol_version", 70)
+ALERT("insufficient_security", 71)
+ALERT("internal_error", 80)
+ALERT("inappropriate_fallback", 86)
+ALERT("user_canceled", 90)
+ALERT("no_renegotiation", 100)
+ALERT("missing_extension", 109)
+ALERT("unsupported_extension", 110)
+ALERT("certificate_unobtainable", 111)
+ALERT("unrecognized_name", 112)
+ALERT("bad_certificate_status_response", 113)
+ALERT("bad_certificate_hash_value", 114)
+ALERT("unknown_psk_identity", 115)
+ALERT("certificate_required", 116)
+ALERT("no_application_protocol", 120)
