@@ -29,13 +29,19 @@ INCS=	-I. \
 	-Isrc \
 	-Ilib \
 	-I/usr/local/include \
+	-I/opt/homebrew/Cellar/pcre2/10.47/include \
+	-I/opt/homebrew/Cellar/openssl@3/3.6.0/include \
 	-pthread
 
 LIBS=	-L/usr/local/lib \
+	-L/opt/homebrew/Cellar/pcre2/10.47/lib \
+	-L/opt/homebrew/Cellar/openssl@3/3.6.0/lib \
 	-lm \
 	-lpcre2-8 \
 	-lz \
-	-ldl
+	-ldl \
+	-lssl \
+	-lcrypto
 
 #######################################################################
 # If you want to build vtest without varnish support, use this part:
