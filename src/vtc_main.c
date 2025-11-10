@@ -1045,6 +1045,8 @@ main(int argc, char * const *argv)
 
 	AZ(VSB_finish(params_vsb));
 
+	vtc_tls_init();
+
 	ip_magic();
 
 	if (iflg)
