@@ -1,0 +1,26 @@
+varnishtest "test client verification"
+
+server s1 {
+	tls_config {
+		client_vfy = required
+		client_vfy_ca = ${topsrc}/etc/ca/certs/ca.cert.pem
+	}
+	tls_handshake
+	expect tls.cert.subject == client01
+	expect tls.cert1.subject ~ "Intermediate CA"
+	expect tls.cert0.issuer == tls.cert1.subject
+	expect tls.failed == false
+	rxreq
+	txresp
+} -start
+
+client c1 -connect ${s1_sock} {
+	tls_config {
+		cert = ${topsrc}/etc/ca/bundle/client01.pem
+	}
+	tls_handshake
+	expect tls.failed == false
+	expect tls.cert.subject == example.com
+	txreq
+	rxresp
+} -run

@@ -1,0 +1,88 @@
+varnishtest "Test TLS session resumption"
+
+feature tls
+feature tls_1_3
+
+server s1 -repeat 3 {
+	tls_handshake
+	expect tls.failed == false
+	expect tls.sess_reused == false
+	rxreq
+	txresp
+} -start
+
+client c1 -connect ${s1_sock} {
+	tls_handshake
+	expect tls.failed == false
+	expect tls.cert.subject == example.com
+	expect tls.sess_reused == false
+	txreq
+	rxresp
+} -run
+
+client c2 -connect ${s1_sock} {
+	tls_config {
+		sess_out = "${tmpdir}/c2.sess"
+		version = TLSv1.3
+	}
+	tls_handshake
+	expect tls.failed == false
+	expect tls.sess_reused == false
+	txreq
+	rxresp
+} -run
+
+shell -expect "1" "grep -c 'BEGIN SSL SESSION' ${tmpdir}/c2.sess"
+
+client c3 -connect ${s1_sock} {
+	tls_config {
+		sess_out = "${tmpdir}/c3.sess"
+		version = TLSv1.2
+	}
+	tls_handshake
+	expect tls.failed == false
+	expect tls.sess_reused == false
+	txreq
+	rxresp
+} -run
+
+shell -expect "1" "grep -c 'BEGIN SSL SESSION' ${tmpdir}/c3.sess"
+server s1 -wait
+
+server s2 {
+	tls_handshake
+	expect tls.failed == false
+	expect tls.sess_reused == false
+	rxreq
+	txresp
+	close
+
+	accept
+	tls_handshake
+	expect tls.failed == false
+	expect tls.sess_reused == true
+	rxreq
+	txresp
+} -start
+
+client c4 -connect ${s2_sock} {
+	tls_config {
+		sess_out = "${tmpdir}/c4.sess"
+	}
+	tls_handshake
+	expect tls.failed == false
+	expect tls.sess_reused == false
+	txreq
+	rxresp
+} -run
+
+client c5 -connect ${s2_sock} {
+	tls_config {
+		sess_in = "${tmpdir}/c4.sess"
+	}
+	tls_handshake
+	expect tls.failed == false
+	expect tls.sess_reused == true
+	txreq
+	rxresp
+} -run

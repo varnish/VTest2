@@ -1,0 +1,205 @@
+varnishtest "tls: OCSP stapling"
+
+feature tls
+
+# Below is a base64 encoded DER encoded OCSP response, produced via
+# openssl's OCSP responder application.
+#
+# The server was run via
+#
+# $ openssl ocsp -port 1234 -text -index intermediate/index.txt
+#     -CA intermediate/certs/ca-chain.cert.pem
+#     -rkey intermediate/private/ocsp.example.com.key.pem -rsigner
+#     intermediate/certs/ocsp.example.com.cert.pem -ndays 10000
+#
+# And the client was run as
+#
+# $ openssl ocsp -CAfile intermediate/certs/ca-chain.cert.pem
+#     -url http://localhost:1234  -issuer intermediate/certs/intermediate.cert.pem
+#     -cert intermediate/certs/example.com.cert.pem -respout oresp
+#
+
+file f1 -write {
+MIIJTwoBAKCCCUgwgglEBgkrBgEFBQcwAQEEggk1MIIJMTCCARiheTB3MQswCQYDVQQGEwJOTzEP
+MA0GA1UECAwGTm9yd2F5MRkwFwYDVQQKDBBWYXJuaXNoIFNvZnR3YXJlMSEwHwYDVQQLDBhWYXJu
+aXNoIFNvZnR3YXJlIFRlc3QgQ0ExGTAXBgNVBAMMEG9jc3AuZXhhbXBsZS5jb20YDzIwMjQxMTIw
+MTI1NzU4WjBlMGMwOzAJBgUrDgMCGgUABBQFHwGugwyJslIGv32aHrLHaPhv5gQUKxxDAoAYRQho
+XWowfObwwY9+/gMCAhAKgAAYDzIwMjQxMTIwMTI1NzU4WqARGA8yMDUyMDQwNzEyNTc1OFqhIzAh
+MB8GCSsGAQUFBzABAgQSBBDh5LDLHePSL7j10oxFSSQUMA0GCSqGSIb3DQEBCwUAA4ICAQApFQxc
+hmkpBI4uS8wzAj7WfxBNAIFIHMOzB+PIj/zFsAqH1ARIdfeRhk7+Bv76HirIWrRgIx4eU1K71ITy
+YCWVkE0fNNF2zaCH3YpM94j2MPzAOLFhjMALdfggf+7AlYG8k7IheVuZTmm/XPVIkNoiewdSITQC
+WNbUSRCtSaCzyOrui0957yFoQH83b1b/w8jMXjtX7sPKEa7sfT/OBwFGRK0+TM6c84h/Fc/4/OG1
+6p1KsZMaQ32WKYEECWzvKw+vJVLrdzw6+3fRsGLgC/x44TTW+QTWVbCHZDLW4flNO5yxHl8YUkjF
+eMQuMtGgwggF9+g1tt7l/fl0mqTa9oxG+HOMGGvEAY1DPemRk+f4XKW4gCAGJJB8o4jpxGpwPhtm
+j6Q0zEzexlu4u3w1IK/yYMdTtUTMpMwH/y1x+eVDPL+6rlDPnwI+aV9Wz5s4zBdLFepHaxrgU9rN
+p1ZaYbe9p9I0J2Qxd/OFhmXJJ35UnMa8NNiRavfa1MaQlTukycgQGENrA9zG9sZGpDDVFzYmFi/x
+awtwDxy6/YoP3QpsQqSqlBLwHTnVmwj2NpLnMDpJBPM9QxBntd1KQXGfQ7tn3eoMKx4jGsAKfZ+c
+BxVdMObIQerp4XFJgqvHeod+GpYB2S9iGAmDu03qH6iLvyaemDNwxJcT8/4o9MtO3ePpEaCCBf0w
+ggX5MIIF9TCCA92gAwIBAgICEAcwDQYJKoZIhvcNAQELBQAwgYwxCzAJBgNVBAYTAk5PMQ8wDQYD
+VQQIDAZOb3J3YXkxGTAXBgNVBAoMEFZhcm5pc2ggU29mdHdhcmUxITAfBgNVBAsMGFZhcm5pc2gg
+U29mdHdhcmUgVGVzdCBDQTEuMCwGA1UEAwwlVmFybmlzaCBTb2Z0d2FyZSBUZXN0IEludGVybWVk
+aWF0ZSBDQTAeFw0yNDAxMTUxNDA2NDhaFw00NDA3MjgxNDA2NDhaMHcxCzAJBgNVBAYTAk5PMQ8w
+DQYDVQQIDAZOb3J3YXkxGTAXBgNVBAoMEFZhcm5pc2ggU29mdHdhcmUxITAfBgNVBAsMGFZhcm5p
+c2ggU29mdHdhcmUgVGVzdCBDQTEZMBcGA1UEAwwQb2NzcC5leGFtcGxlLmNvbTCCAiIwDQYJKoZI
+hvcNAQEBBQADggIPADCCAgoCggIBAM5GgetkIRynkgtdqGc0sZLF02vIKMs0cArf+AAwTNNRJ2L9
+B99NdPZDaIcUwXev1OmXKA2j7X4HhX2heDUrrJTU5U1ZfRuPuwyq/P0KJmM127d98mMEN//t4iJB
++kkONVlAQVcjfpTYYWnVjShOQYzloyGmnsS3cFWRcAd6QVrLzaxfg3b6NESJgEqL+gVxjwbVV46j
+IAkR0F4b46l8UZaWdQebyRYai0STOMZwMRDB/jwHKv7cHBwuhk70PN9+pftcPtJPf3b8GnHykDD9
+1VLyBBf1kxP1H8hyBUI7RQT/O/6wmqtgoSPlpeLOg6AD7RBqhbco1XRJ986YmNaqe1aL6G17PRL6
+i21ZQZjahFPIgSvDXs9IlkHBXVgW/5kIk8TYQPz/xz3j7HQOyOCt4CPsq1CsOiDwnmwxvfI4VUls
+fzlY+rS1cXS4sd1ztVuxhsbzdA0w/7NO4m3HCnBtfrqXIvqFJgW/iWoQjsQRCayxCXj++QNlZyWj
+R3m6HuhL5QyNjnGsOakCYkNDh0Bn9Ppc1Zh9G0Yh5OYDxwtDL/YU57nQWMz3ihJPhpLh7yUrw/lr
+xh9cJd3zMKW59QkPjyuWr1L4OPkchtRZGZInQnRvJF9ydIZ+5k5yD2ThKv/L9ooGboGUXqXLVb33
+QaN5DuMUjbe7URVX7bVgt7ndlw2vAgMBAAGjdTBzMAkGA1UdEwQCMAAwHQYDVR0OBBYEFIb/bFV3
+Bulsk/lsOUwtcn+z++70MB8GA1UdIwQYMBaAFCscQwKAGEUIaF1qMHzm8MGPfv4DMA4GA1UdDwEB
+/wQEAwIHgDAWBgNVHSUBAf8EDDAKBggrBgEFBQcDCTANBgkqhkiG9w0BAQsFAAOCAgEAV+3cHjrb
+FYXkjfA6hLlbwgpcOaUU98RoonSClUXfzUgR8v00weWjXO+EerJJWYG9byfGIa5LINWmYg04YSAa
+4ynNohF4czSbvBhpSqXPLT7pzo/oCXjBE5Ec6/J/zKG08XIvNQIkRfO/MUN8BnVhjCWeHx4Bx0WD
+ed+20hKJn6C/dk8Yct5QNtlkTo2HcY9qnqyUJZsNj3WYa+SaSzisYtIvd7X7KmYNP47uR7d4CNiW
+NAfWEx22lfXjHRqtMvsrEc6FKvowafFu8ysKtrrjMFMXRLJMVAXiCCG+Fow4OrezEnFRU7WmUBP1
+lJERHbXWpkGU0iLA1K1lkTHH/i7QHAggXmu/6RiE69ioBGYvMkT67Y7pRUzfQly1gz8ad5KFTthe
+/96v9CZOYxpkUwtWB7hm42ZDY9Cex2MTjeCaCTQBl5+YrNFnd3CZqkqrjgkluPqGGAz4zwdORVmE
++YkgZuq/IugSfK2cggIcHbDG8e7efjGrbb9T/NrNedpYPQWeZ0pC5Sy9X7oKAYsVkzuYnWlFP3sU
+sGef1pLIYjfV1/25/PmEbtt11mvK5mMMFNhnazQYkSLCJaHUieLBJX0LOy9HpCg2j9O7zPPG6UsY
++8V45PnuQ51unt6Jvne4Dorv4BrGXK14GTQ6FHlKtgSs2KWF+YSS6KbIkFmhY5gAVpI=
+}
+
+shell {base64 -d ${f1_path} > ${f1_path}.der}
+
+setenv SSL_CERT_FILE ${topsrc}/etc/ca/certs/ca.cert.pem
+
+server s1 {
+	tls_config {
+		cert = ${topsrc}/etc/ca/bundle/example.com.pem
+		staple = ${f1_path}.der
+		version = TLSv1.2
+	}
+	tls_handshake
+	expect tls.failed == false
+	expect tls.staple_requested == true
+} -start
+
+client c1 -connect ${s1_sock} {
+	tls_config {
+		cert_status = true
+	}
+	tls_handshake
+	expect tls.cert.subject == "example.com"
+	expect tls.staple_requested == true
+	expect tls.ocsp_resp_status == successful
+	expect tls.ocsp_verify == OK
+	expect tls.ocsp_cert_status == good
+	expect tls.failed == false
+	expect tls.ocsp_this_update == "2024-11-20T12:57:58Z"
+	# No staple verification yet
+} -run
+
+server s2 {
+	tls_handshake
+	expect tls.failed == false
+	expect tls.staple_requested == false
+} -start
+
+
+client c2 -connect ${s2_sock} {
+	tls_handshake
+	expect tls.cert.subject == "example.com"
+	expect tls.staple_requested == false
+	expect tls.failed == false
+	expect tls.ocsp_resp_status == <undef>
+} -run
+
+
+# revoked.example.com
+file f2 -write {
+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
+psiQWaFjmABWkg==
+}
+
+shell {base64 -d ${f2_path} > ${f2_path}.der}
+
+server s3 {
+	tls_config {
+		cert = ${topsrc}/etc/ca/bundle/revoked.example.com.pem
+		staple = ${f2_path}.der
+		version = TLSv1.2
+	}
+	tls_handshake
+	expect tls.failed == false
+	expect tls.staple_requested == true
+} -start
+
+client c3 -connect ${s3_sock} {
+	tls_config {
+		cert_status = true
+	}
+	tls_handshake
+	expect tls.cert.subject == "revoked.example.com"
+	expect tls.ocsp_cert_status == revoked
+	expect tls.failed == false
+	expect tls.ocsp_this_update ~ 2024
+} -run
+
+
+file f3 -write {
+	This is not a DER encoded OCSP response.
+}
+
+server s4 {
+	tls_config {
+		staple = ${f3_path}
+	}
+	tls_handshake
+	expect tls.failed == false
+	expect tls.staple_requested == true
+} -start
+
+client c4 -connect ${s4_sock} {
+	tls_config {
+		cert_status = true
+	}
+	tls_handshake
+	expect tls.ocsp_resp_status == malformed
+	expect tls.failed == false
+} -run

@@ -1,0 +1,136 @@
+varnishtest "tls basic functionality"
+
+# basic simple example
+server s1 {
+	tls_config {
+		cert = "${topsrc}/etc/certs/example.com"
+	}
+	tls_handshake
+	rxreq
+	txresp -hdr "foo: bar"
+} -start
+
+client c1 -connect ${s1_sock} {
+	tls_handshake
+	txreq
+	rxresp
+	expect resp.http.foo == "bar"
+} -run
+
+
+
+# test tls.cert bits
+server s1 {
+	tls_config {
+		cert = ${topsrc}/etc/ca/bundle/example.com.pem
+	}
+	tls_handshake
+	expect tls.cert.issuer == <undef>
+} -start
+
+client c1 -connect ${s1_sock} {
+	tls_handshake
+	expect tls.cert.subject == "example.com"
+	expect tls.cert.subject_alt_names == "DNS:example.com, DNS:www.example.com, IP:1.2.3.4"
+	expect tls.cert.issuer ~ "Intermediate CA"
+	expect tls.cert1.subject == tls.cert.issuer
+	expect tls.cert2.issuer == <undef>
+} -run
+
+
+# test version specifier
+server s1 {
+	tls_config {
+		version = TLSv1.2
+	}
+	tls_handshake
+	expect tls.version == TLSv1.2
+} -start
+
+client c1 -connect ${s1_sock}  {
+	tls_config {
+	}
+	tls_handshake
+	expect tls.version == TLSv1.2
+} -run
+
+
+server s1 {
+	tls_config {
+		version = TLSv1.2
+	}
+	tls_handshake
+	expect tls.failed == true
+} -start
+
+client c1 -connect ${s1_sock}  {
+	tls_config {
+		version = TLSv1.1
+	}
+	tls_handshake
+	expect tls.failed == true
+} -run
+
+# test (failing) cipher_list
+server s1 {
+	tls_config {
+		version = TLSv1.2
+	}
+	tls_handshake
+	expect tls.failed == true
+} -start
+
+client c1 -connect ${s1_sock}  {
+	tls_config {
+		# no shared ciphers
+		cipher_list = "NULL"
+	}
+	tls_handshake
+	expect tls.failed == true
+} -run
+
+
+# Test alpn
+server s1 {
+	tls_config {
+		alpn = http/1.1 h2
+	}
+	loop 4 {
+		tls_handshake
+		expect tls.failed == false
+		accept
+	}
+} -start
+
+client c1 -connect ${s1_sock} {
+	tls_config {
+		alpn = http/1.1
+	}
+	tls_handshake
+	expect tls.failed == false
+	expect tls.alpn == "http/1.1"
+} -run
+
+client c1 -connect ${s1_sock} {
+	tls_config {
+		alpn = h2
+	}
+	tls_handshake
+	expect tls.failed == false
+	expect tls.alpn == "h2"
+} -run
+
+client c2 -connect ${s1_sock} {
+	tls_handshake
+	expect tls.failed == false
+	expect tls.alpn == <undef>
+} -run
+
+client c1 -connect ${s1_sock} {
+	tls_config {
+		alpn = foobar
+	}
+	tls_handshake
+	expect tls.failed == false
+	expect tls.alpn == <undef>
+} -run
