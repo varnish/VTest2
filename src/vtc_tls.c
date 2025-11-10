@@ -363,7 +363,7 @@ cmd_tls_cfg_cipher_list(CMD_ARGS)
 	}
 }
 
-#ifdef HAVE_TLS_1_3
+#if defined(TLS1_3_VERSION) || OPENSSL_VERSION_NUMBER >= 0x10101000L
 /* SECTION: tls_config.spec.ciphersuites
  *
  * ciphersuites
@@ -1499,6 +1499,8 @@ vtc_tls_var_resolve(const struct http *hp, const char *spec)
  *   Only available in client {}.
  *
  */
+extern const struct cmds http_cmds[];
+
 void
 cmd_http_tls_config(CMD_ARGS)
 {
@@ -1515,6 +1517,8 @@ cmd_http_tls_config(CMD_ARGS)
 	else
 		hp->tlsconf = tls_client_setup(av[1], vl);
 	AN(hp->tlsconf);
+	/* Restore http command list after TLS config parsing */
+	vtc_log_set_cmd(vl, http_cmds);
 }
 
 /* SECTION: client-server.spec.tls_handshake
@@ -1590,6 +1594,8 @@ cmd_http_tls_handshake(CMD_ARGS)
 		else
 			cfg = tls_client_setup("", vl);
 		hp->tlsconf = cfg;
+		/* Restore http command list after TLS config parsing */
+		vtc_log_set_cmd(vl, http_cmds);
 	}
 
 	ALLOC_OBJ(conn, TLSCONN_MAGIC);
