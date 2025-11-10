@@ -32,6 +32,25 @@
 
 #define MAX_HDR		64
 
+/* Session operations for TLS abstraction */
+typedef int	sess_poll_f(const struct http *, short *, vtim_real);
+typedef ssize_t	sess_read_f(const struct http *, void *, size_t);
+typedef ssize_t	sess_write_f(const struct http *, const void *, size_t);
+typedef void	sess_close_f(struct http *);
+
+struct sess_ops {
+	sess_poll_f		*poll;
+	sess_read_f		*read;
+	sess_write_f		*write;
+	sess_close_f		*close;
+};
+
+sess_poll_f http_fd_poll;
+
+/* Forward declarations for TLS types */
+struct tlsctx;
+struct tlsconn;
+
 struct vtc_sess {
 	unsigned		magic;
 #define VTC_SESS_MAGIC		0x932bd565
@@ -56,6 +75,9 @@ struct http {
 	struct vtc_sess		*sess;
 	vtim_dur		timeout;
 	struct vtclog		*vl;
+	struct tlsctx		*tlsconf;
+	struct tlsconn		*tlsconn;
+	const struct sess_ops	*so;
 
 	struct vsb		*vsb;
 
