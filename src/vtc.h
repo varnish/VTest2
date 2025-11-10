@@ -110,6 +110,7 @@ void b64_settings(struct http *hp, const char *s);
 void cmd_http_tls_config(CMD_ARGS);
 void cmd_http_tls_handshake(CMD_ARGS);
 void vtc_tls_init(void);
+const char *vtc_tls_var_resolve(const struct http *hp, const char *spec);
 
 /* vtc_gzip.c */
 void vtc_gunzip(struct http *, char *, long *);

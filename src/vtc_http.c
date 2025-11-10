@@ -353,6 +353,11 @@ cmd_var_resolve(struct http *hp, char *spec)
 			return ("true");
 		else
 			return ("false");
+	} else if (!strncmp(spec, "tls.", 4)) {
+		if (hp->tlsconn)
+			return (vtc_tls_var_resolve(hp, spec));
+		else
+			return (spec);
 	} else
 		return (spec);
 	hdr = http_find_header(hh, hdr);
