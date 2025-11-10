@@ -222,12 +222,14 @@ synth_body(const char *len, int rnd)
 static void
 http_write(const struct http *hp, int lvl, const char *pfx)
 {
+	ssize_t l;
 
 	AZ(VSB_finish(hp->vsb));
 	vtc_dump(hp->vl, lvl, pfx, VSB_data(hp->vsb), VSB_len(hp->vsb));
-	if (VSB_tofile(hp->vsb, hp->sess->fd))
-		vtc_log(hp->vl, hp->fatal, "Write failed: %s",
-		    strerror(errno));
+	l = hp->so->write(hp, VSB_data(hp->vsb), VSB_len(hp->vsb));
+	if (l != VSB_len(hp->vsb))
+		vtc_log(hp->vl, hp->fatal, "Write failed: (%zd vs %zd) %s",
+		    l, VSB_len(hp->vsb), strerror(errno));
 }
 
 /**********************************************************************
@@ -505,13 +507,11 @@ static int
 http_rxchar(struct http *hp, int n, int eof)
 {
 	int i;
-	struct pollfd pfd[1];
+	short ev;
 
 	while (n > 0) {
-		pfd[0].fd = hp->sess->fd;
-		pfd[0].events = POLLIN;
-		pfd[0].revents = 0;
-		i = poll(pfd, 1, (int)(hp->timeout * 1000));
+		ev = POLLIN;
+		i = hp->so->poll(hp, &ev, NAN);
 		if (i < 0 && errno == EINTR)
 			continue;
 		if (i == 0) {
@@ -528,11 +528,11 @@ http_rxchar(struct http *hp, int n, int eof)
 		}
 		assert(i > 0);
 		assert(hp->rx_p + n < hp->rx_e);
-		i = read(hp->sess->fd, hp->rx_p, n);
-		if (!(pfd[0].revents & POLLIN))
+		i = hp->so->read(hp, hp->rx_p, n);
+		if (!(ev & POLLIN))
 			vtc_log(hp->vl, 4,
 			    "HTTP rx poll (fd:%d revents: %x n=%d, i=%d)",
-			    hp->sess->fd, pfd[0].revents, n, i);
+			    hp->sess->fd, ev, n, i);
 		if (i == 0 && eof)
 			return (i);
 		if (i == 0) {
@@ -1303,7 +1303,7 @@ cmd_http_recv(CMD_ARGS)
 	AZ(av[2]);
 	n = strtoul(av[1], NULL, 0);
 	while (n > 0) {
-		i = read(hp->sess->fd, u, n > 32 ? 32 : n);
+		i = hp->so->read(hp, u, n > 32 ? 32 : n);
 		if (i > 0)
 			vtc_dump(hp->vl, 4, "recv", u, i);
 		else
@@ -1330,7 +1330,7 @@ cmd_http_send(CMD_ARGS)
 	AN(av[1]);
 	AZ(av[2]);
 	vtc_dump(hp->vl, 4, "send", av[1], -1);
-	i = write(hp->sess->fd, av[1], strlen(av[1]));
+	i = hp->so->write(hp, av[1], strlen(av[1]));
 	if (i != strlen(av[1]))
 		vtc_log(hp->vl, hp->fatal, "Write error in http_send(): %s",
 		    strerror(errno));
@@ -1357,7 +1357,7 @@ cmd_http_send_n(CMD_ARGS)
 		vtc_dump(hp->vl, 4, "send_n", av[2], -1);
 	l = strlen(av[2]);
 	while (n--) {
-		i = write(hp->sess->fd, av[2], l);
+		i = hp->so->write(hp, av[2], l);
 		if (i != l)
 			vtc_log(hp->vl, hp->fatal,
 			    "Write error in http_send(): %s",
@@ -1507,7 +1507,7 @@ static void
 cmd_http_expect_close(CMD_ARGS)
 {
 	struct http *hp;
-	struct pollfd fds[1];
+	short ev;
 	char c;
 	int i;
 
@@ -1519,19 +1519,17 @@ cmd_http_expect_close(CMD_ARGS)
 	if (hp->h2)
 		stop_h2(hp);
 	while (1) {
-		fds[0].fd = hp->sess->fd;
-		fds[0].events = POLLIN;
-		fds[0].revents = 0;
-		i = poll(fds, 1, (int)(hp->timeout * 1000));
+		ev = POLLIN;
+		i = hp->so->poll(hp, &ev, NAN);
 		if (i < 0 && errno == EINTR)
 			continue;
 		if (i == 0)
 			vtc_log(vl, hp->fatal, "Expected close: timeout");
-		if (i != 1 || !(fds[0].revents & (POLLIN|POLLERR|POLLHUP)))
+		if (i != 1 || !(ev & (POLLIN|POLLERR|POLLHUP)))
 			vtc_log(vl, hp->fatal,
 			    "Expected close: poll = %d, revents = 0x%x",
-			    i, fds[0].revents);
-		i = read(hp->sess->fd, &c, 1);
+			    i, ev);
+		i = hp->so->read(hp, &c, 1);
 		if (i <= 0 && VTCP_Check(i))
 			break;
 		if (i == 1 && vct_islws(c))
@@ -1561,7 +1559,7 @@ cmd_http_close(CMD_ARGS)
 	assert(*hp->sfd >= 0);
 	if (hp->h2)
 		stop_h2(hp);
-	VTCP_close(&hp->sess->fd);
+	hp->so->close(hp);
 	vtc_log(vl, 4, "Closed");
 }
 
@@ -1585,7 +1583,7 @@ cmd_http_accept(CMD_ARGS)
 	if (hp->h2)
 		stop_h2(hp);
 	if (hp->sess->fd >= 0)
-		VTCP_close(&hp->sess->fd);
+		hp->so->close(hp);
 	vtc_log(vl, 4, "Accepting");
 	hp->sess->fd = accept(*hp->sfd, NULL, NULL);
 	if (hp->sess->fd < 0)
@@ -1710,12 +1708,12 @@ cmd_http_txpri(CMD_ARGS)
 
 	vtc_dump(hp->vl, 4, "txpri", PREFACE, sizeof(PREFACE));
 	/* Dribble out the preface */
-	l = write(hp->sess->fd, PREFACE, 18);
+	l = hp->so->write(hp, PREFACE, 18);
 	if (l != 18)
 		vtc_log(vl, hp->fatal, "Write failed: (%zd vs %zd) %s",
 		    l, sizeof(PREFACE), strerror(errno));
 	VTIM_sleep(0.01);
-	l = write(hp->sess->fd, PREFACE + 18, sizeof(PREFACE) - 18);
+	l = hp->so->write(hp, PREFACE + 18, sizeof(PREFACE) - 18);
 	if (l != sizeof(PREFACE) - 18)
 		vtc_log(vl, hp->fatal, "Write failed: (%zd vs %zd) %s",
 		    l, sizeof(PREFACE), strerror(errno));
@@ -1861,6 +1859,10 @@ const struct cmds http_cmds[] = {
 	CMD_HTTP(stream)
 	CMD_HTTP(settings)
 
+	/* TLS */
+	CMD_HTTP(tls_config)
+	CMD_HTTP(tls_handshake)
+
 	/* client */
 	CMD_HTTP(rxresp)
 	CMD_HTTP(rxrespbody)
@@ -1903,6 +1905,73 @@ http_process_cleanup(void *arg)
 	FREE_OBJ(hp);
 }
 
+/**********************************************************************
+ * Default (non-TLS) session operations
+ */
+
+int
+http_fd_poll(const struct http *hp, short *events, vtim_real deadline)
+{
+	struct pollfd pfd[1];
+	vtim_dur tmo;
+	int i;
+
+	CHECK_OBJ_NOTNULL(hp, HTTP_MAGIC);
+	pfd->fd = hp->sess->fd;
+	pfd->events = *events;
+	pfd->revents = 0;
+
+	if (isnan(deadline)) {
+		if (hp->timeout > 0.0)
+			tmo = hp->timeout;
+		else
+			tmo = vtc_maxdur * .5;
+	} else {
+		tmo = deadline - VTIM_real();
+		if (tmo <= 0.0)
+			tmo = 1e-3;
+	}
+
+	i = poll(pfd, 1, (int)(tmo * 1e3));
+	*events = pfd->revents;
+	return (i);
+}
+
+static ssize_t
+http_fd_read(const struct http *hp, void *buf, size_t len)
+{
+	CHECK_OBJ_NOTNULL(hp, HTTP_MAGIC);
+	AZ(hp->tlsconn);
+	return (read(hp->sess->fd, buf, len));
+}
+
+static ssize_t
+http_fd_write(const struct http *hp, const void *buf, size_t len)
+{
+	CHECK_OBJ_NOTNULL(hp, HTTP_MAGIC);
+	AZ(hp->tlsconn);
+	return (write(hp->sess->fd, buf, len));
+}
+
+static void
+http_fd_close(struct http *hp)
+{
+	CHECK_OBJ_NOTNULL(hp, HTTP_MAGIC);
+	AZ(hp->tlsconn);
+	VTCP_close(&hp->sess->fd);
+}
+
+static const struct sess_ops http_fd_so = {
+	.poll = http_fd_poll,
+	.read = http_fd_read,
+	.write = http_fd_write,
+	.close = http_fd_close,
+};
+
+/**********************************************************************
+ * HTTP process
+ */
+
 int
 http_process(struct vtclog *vl, struct vtc_sess *vsp, const char *spec,
     int sock, int *sfd, const char *addr, int rcvbuf)
@@ -1914,6 +1983,7 @@ http_process(struct vtclog *vl, struct vtc_sess *vsp, const char *spec,
 	(void)sfd;
 	ALLOC_OBJ(hp, HTTP_MAGIC);
 	AN(hp);
+	hp->so = &http_fd_so;
 	hp->sess = vsp;
 	hp->sess->fd = sock;
 	hp->timeout = vtc_maxdur * .5;
