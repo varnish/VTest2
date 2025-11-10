@@ -19,7 +19,7 @@ feature tls
 #     -cert intermediate/certs/example.com.cert.pem -respout oresp
 #
 
-file f1 -write {
+shell {cat > ${tmpdir}/f1.b64 << 'EOF'
 MIIJTwoBAKCCCUgwgglEBgkrBgEFBQcwAQEEggk1MIIJMTCCARiheTB3MQswCQYDVQQGEwJOTzEP
 MA0GA1UECAwGTm9yd2F5MRkwFwYDVQQKDBBWYXJuaXNoIFNvZnR3YXJlMSEwHwYDVQQLDBhWYXJu
 aXNoIFNvZnR3YXJlIFRlc3QgQ0ExGTAXBgNVBAMMEG9jc3AuZXhhbXBsZS5jb20YDzIwMjQxMTIw
@@ -62,16 +62,16 @@ lJERHbXWpkGU0iLA1K1lkTHH/i7QHAggXmu/6RiE69ioBGYvMkT67Y7pRUzfQly1gz8ad5KFTthe
 +YkgZuq/IugSfK2cggIcHbDG8e7efjGrbb9T/NrNedpYPQWeZ0pC5Sy9X7oKAYsVkzuYnWlFP3sU
 sGef1pLIYjfV1/25/PmEbtt11mvK5mMMFNhnazQYkSLCJaHUieLBJX0LOy9HpCg2j9O7zPPG6UsY
 +8V45PnuQ51unt6Jvne4Dorv4BrGXK14GTQ6FHlKtgSs2KWF+YSS6KbIkFmhY5gAVpI=
+EOF
+base64 -d ${tmpdir}/f1.b64 > ${tmpdir}/f1.der
 }
-
-shell {base64 -d ${f1_path} > ${f1_path}.der}
 
 setenv SSL_CERT_FILE ${topsrc}/etc/ca/certs/ca.cert.pem
 
 server s1 {
 	tls_config {
 		cert = ${topsrc}/etc/ca/bundle/example.com.pem
-		staple = ${f1_path}.der
+		staple = ${tmpdir}/f1.der
 		version = TLSv1.2
 	}
 	tls_handshake
@@ -111,7 +111,7 @@ client c2 -connect ${s2_sock} {
 
 
 # revoked.example.com
-file f2 -write {
+shell {cat > ${tmpdir}/f2.b64 << 'EOF'
 MIIJYAoBAKCCCVkwgglVBgkrBgEFBQcwAQEEgglGMIIJQjCCASmheTB3MQswCQYDVQQGEwJOTzEP
 MA0GA1UECAwGTm9yd2F5MRkwFwYDVQQKDBBWYXJuaXNoIFNvZnR3YXJlMSEwHwYDVQQLDBhWYXJu
 aXNoIFNvZnR3YXJlIFRlc3QgQ0ExGTAXBgNVBAMMEG9jc3AuZXhhbXBsZS5jb20YDzIwMjQwNjA1
@@ -155,14 +155,14 @@ SquOCSW4+oYYDPjPB05FWYT5iSBm6r8i6BJ8rZyCAhwdsMbx7t5+Mattv1P82s152lg9BZ5nSkLl
 LL1fugoBixWTO5idaUU/exSwZ5/WkshiN9XX/bn8+YRu23XWa8rmYwwU2GdrNBiRIsIlodSJ4sEl
 fQs7L0ekKDaP07vM88bpSxj7xXjk+e5DnW6e3om+d7gOiu/gGsZcrXgZNDoUeUq2BKzYpYX5hJLo
 psiQWaFjmABWkg==
+EOF
+base64 -d ${tmpdir}/f2.b64 > ${tmpdir}/f2.der
 }
-
-shell {base64 -d ${f2_path} > ${f2_path}.der}
 
 server s3 {
 	tls_config {
 		cert = ${topsrc}/etc/ca/bundle/revoked.example.com.pem
-		staple = ${f2_path}.der
+		staple = ${tmpdir}/f2.der
 		version = TLSv1.2
 	}
 	tls_handshake
@@ -182,13 +182,14 @@ client c3 -connect ${s3_sock} {
 } -run
 
 
-file f3 -write {
+shell {cat > ${tmpdir}/f3 << 'EOF'
 	This is not a DER encoded OCSP response.
+EOF
 }
 
 server s4 {
 	tls_config {
-		staple = ${f3_path}
+		staple = ${tmpdir}/f3
 	}
 	tls_handshake
 	expect tls.failed == false
