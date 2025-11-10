@@ -58,7 +58,7 @@ vtest: ${DEPS} ${SRCS}
 		${LIBS}
 
 test: vtest
-	env PATH=`pwd`:${PATH} vtest tests/*.vtc
+	env PATH=`pwd`:${PATH} vtest tests/*.vtc tests/tls/*.vtc
 
 #######################################################################
 # ... other point to varnish source tree and use this part:
