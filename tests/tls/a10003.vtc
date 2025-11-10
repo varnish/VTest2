@@ -1,0 +1,14 @@
+varnishtest "tls basic functionality: Minimal example with builtin cert"
+
+server s1 {
+	tls_handshake
+	rxreq
+	txresp -hdr "foo: bar"
+} -start
+
+client c1 -connect ${s1_sock} {
+	tls_handshake
+	txreq
+	rxresp
+	expect resp.http.foo == "bar"
+} -run

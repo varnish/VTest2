@@ -1,0 +1,23 @@
+varnishtest "tls: test certN.*"
+
+setenv SSL_CERT_FILE ${topsrc}/etc/ca/certs/ca.cert.pem
+
+server s1 {
+	tls_config {
+		cert = ${topsrc}/etc/ca/bundle/example.com.pem
+	}
+	tls_handshake
+	expect tls.cert.issuer == <undef>
+} -start
+
+client c1 -connect ${s1_sock} {
+	tls_config {
+		verify_peer = true
+	}
+	tls_handshake
+	expect tls.failed == false
+	expect tls.cert.subject == "example.com"
+	expect tls.cert.issuer ~ "Intermediate CA"
+	expect tls.cert1.subject == tls.cert.issuer
+	expect tls.cert2.issuer == <undef>
+} -run
