@@ -7,7 +7,7 @@ TLS_CMD(cert)
 TLS_CMD(version)
 TLS_CMD(cipher_list)
 TLS_CMD(alpn)
-#ifdef HAVE_TLS_1_3
+#if defined(TLS1_3_VERSION) || OPENSSL_VERSION_NUMBER >= 0x10101000L
 TLS_CMD(ciphersuites)
 #endif
 
