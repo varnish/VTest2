@@ -45,36 +45,11 @@
 #include "vsb.h"
 #include "vqueue.h"
 
-#define VTC_CHECK_NAME(vl, nm, type, chr)				\
-	do {								\
-		AN(nm);							\
-		if (*(nm) != chr)					\
-			vtc_fatal(vl,					\
-			    type " name must start with '%c' (got %s)",	\
-			    chr, nm);					\
-	} while (0)
+#include "vtest_api.h"
 
-struct vtclog;
 struct suckaddr;
 
-#define CMD_ARGS char * const *av, void *priv, struct vtclog *vl
 
-typedef void cmd_f(CMD_ARGS);
-
-struct cmds {
-	unsigned		magic;
-#define CMDS_MAGIC		0x9ccc797d
-	const char		*name;
-	cmd_f			*cmd;
-	unsigned		flags;
-#define		CMDS_F_NONE		0x0
-#define		CMDS_F_GLOBAL		0x1
-#define		CMDS_F_SHUT		0x2
-	VTAILQ_ENTRY(cmds)	list;
-
-};
-
-void parse_string(struct vtclog *vl, void *priv, const char *spec);
 int fail_out(void);
 
 #define CMD_GLOBAL(n) cmd_f cmd_##n;
@@ -82,15 +57,8 @@ int fail_out(void);
 #include "cmds.h"
 
 extern volatile sig_atomic_t vtc_error; /* Error, bail out */
-extern int vtc_stop;		/* Abandon current test, no error */
-extern pthread_t	vtc_thread;
 extern int iflg;
-extern vtim_dur vtc_maxdur;
-extern char *vmod_path;
-extern struct vsb *params_vsb;
-extern int leave_temp;
 extern int ign_unknown_macro;
-extern const char *default_listen_addr;
 
 void init_server(void);
 void init_syslog(void);
@@ -118,19 +86,9 @@ Sess_Start_Thread(
 
 char * synth_body(const char *len, int rnd);
 
-void cmd_server_gen_vcl(struct vsb *vsb);
 void cmd_server_gen_haproxy_conf(struct vsb *vsb);
 
-void vtc_log_set_cmd(struct vtclog *vl, const struct cmds *cmds);
 void vtc_loginit(char *buf, unsigned buflen);
-struct vtclog *vtc_logopen(const char *id, ...) v_printflike_(1, 2);
-void vtc_logclose(void *arg);
-void vtc_log(struct vtclog *vl, int lvl, const char *fmt, ...)
-    v_printflike_(3, 4);
-void vtc_fatal(struct vtclog *vl, const char *, ...)
-    v_noreturn_ v_printflike_(2,3);
-void vtc_dump(struct vtclog *vl, int lvl, const char *pfx,
-    const char *str, int len);
 void vtc_hexdump(struct vtclog *, int , const char *, const void *, unsigned);
 
 void vtc_proxy_tlv(struct vtclog *vl, struct vsb *vsb, const char *kva);
@@ -138,19 +96,10 @@ int vtc_send_proxy(int fd, int version, const struct suckaddr *sac,
     const struct suckaddr *sas, struct vsb *tlb);
 
 void add_extension(const char *name);
-void add_cmd(const char *name, cmd_f *cmd, unsigned flags);
 struct cmds *find_cmd(const char *name);
 int exec_file(const char *fn, const char *script, const char *tmpdir,
     char *logbuf, unsigned loglen);
 
-void macro_undef(struct vtclog *vl, const char *instance, const char *name);
-void macro_def(struct vtclog *vl, const char *instance, const char *name,
-    const char *fmt, ...) v_printflike_(4, 5);
-unsigned macro_isdef(const char *instance, const char *name);
-void macro_cat(struct vtclog *, struct vsb *, const char *, const char *);
-struct vsb *macro_expand(struct vtclog *vl, const char *text);
-struct vsb *macro_expandf(struct vtclog *vl, const char *, ...)
-    v_printflike_(2, 3);
 
 typedef char* macro_f(int, char *const *, const char **);
 void extmacro_def(const char *name, macro_f *func, const char *fmt, ...)
@@ -170,5 +119,3 @@ int vtc_gzip_cmd(struct http *hp, char * const *argv, char **body, long *bodylen
 struct vsb *vtc_hex_to_bin(struct vtclog *vl, const char *arg);
 void vtc_expect(struct vtclog *, const char *, const char *, const char *,
     const char *, const char *);
-void vtc_wait4(struct vtclog *, long, int, int, int);
-void *vtc_record(struct vtclog *, int, struct vsb *);

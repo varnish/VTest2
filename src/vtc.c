@@ -76,48 +76,61 @@ static const char *tfn;
  * Commands
  */
 
-static VTAILQ_HEAD(,cmds) cmd_list = VTAILQ_HEAD_INITIALIZER(cmd_list);
+struct icmds {
+	unsigned		magic;
+#define ICMDS_MAGIC		0xa743d463
+	struct cmds		*cmd;
+	VTAILQ_ENTRY(icmds)	list;
+};
+
+static VTAILQ_HEAD(,icmds) icmd_list = VTAILQ_HEAD_INITIALIZER(icmd_list);
 
 void
 add_cmd(const char *name, cmd_f *cmd, unsigned flags)
 {
-	struct cmds *cp;
+	struct icmds *cp;
 
 	AN(name);
 	AN(cmd);
-	ALLOC_OBJ(cp, CMDS_MAGIC);
+	ALLOC_OBJ(cp, ICMDS_MAGIC);
 	AN(cp);
-	cp->name = strdup(name);
-	AN(cp->name);
-	cp->cmd = cmd;
-	cp->flags = flags;
-	VTAILQ_INSERT_HEAD(&cmd_list, cp, list);
+	ALLOC_OBJ(cp->cmd, CMDS_MAGIC);
+	AN(cp->cmd);
+	cp->cmd->name = strdup(name);
+	AN(cp->cmd->name);
+	cp->cmd->cmd = cmd;
+	cp->cmd->flags = flags;
+	VTAILQ_INSERT_HEAD(&icmd_list, cp, list);
 }
 
 struct cmds *
 find_cmd(const char *name)
 {
-	struct cmds *cp;
+	struct icmds *cp;
 	char buf[BUFSIZ];
 
-	VTAILQ_FOREACH(cp, &cmd_list, list) {
-		CHECK_OBJ_NOTNULL(cp, CMDS_MAGIC);
-		if (!strcmp(name, cp->name))
-			return (cp);
+	VTAILQ_FOREACH(cp, &icmd_list, list) {
+		CHECK_OBJ_NOTNULL(cp, ICMDS_MAGIC);
+		CHECK_OBJ_NOTNULL(cp->cmd, CMDS_MAGIC);
+		if (!strcmp(name, cp->cmd->name))
+			return (cp->cmd);
 	}
 
 	bprintf(buf, "libvtest_ext_%s.so", name);
 	void *dlp = dlopen(buf, RTLD_NOW);
-	if (dlp == NULL)
+	if (dlp == NULL) {
+		vtc_log(vltop, 4, "Autoload %s failed: %s", buf, dlerror());
 		return (NULL);
+	}
 	vtc_log(vltop, 4, "Autoloaded %s", buf);
 
-	VTAILQ_FOREACH(cp, &cmd_list, list) {
-		CHECK_OBJ_NOTNULL(cp, CMDS_MAGIC);
-		if (!strcmp(name, cp->name))
-			break;
+	VTAILQ_FOREACH(cp, &icmd_list, list) {
+		CHECK_OBJ_NOTNULL(cp, ICMDS_MAGIC);
+		CHECK_OBJ_NOTNULL(cp->cmd, CMDS_MAGIC);
+		if (!strcmp(name, cp->cmd->name))
+			return (cp->cmd);
 	}
-	return (cp);
+	return (NULL);
 }
 
 static void
@@ -641,18 +654,19 @@ reset_cmd(const char *name)
 static void
 reset_cmds(void)
 {
-	struct cmds *cp;
+	struct icmds *cp;
 
 	// Cleanup is easier if the sockets are closed first.
 	reset_cmd("client");
 	reset_cmd("server");
 
-	VTAILQ_FOREACH(cp, &cmd_list, list) {
-		CHECK_OBJ_NOTNULL(cp, CMDS_MAGIC);
-		if (cp->flags & CMDS_F_SHUT) {
-			cp->flags &= ~CMDS_F_SHUT;
+	VTAILQ_FOREACH(cp, &icmd_list, list) {
+		CHECK_OBJ_NOTNULL(cp, ICMDS_MAGIC);
+		CHECK_OBJ_NOTNULL(cp->cmd, CMDS_MAGIC);
+		if (cp->cmd->flags & CMDS_F_SHUT) {
+			cp->cmd->flags &= ~CMDS_F_SHUT;
 		} else {
-			cp->cmd(NULL, NULL, NULL);
+			cp->cmd->cmd(NULL, NULL, NULL);
 		}
 	}
 }
