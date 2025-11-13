@@ -4,7 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "vsb"
-path = "src/vsb.rs"
+name = "vtest2"
+path = "src/lib.rs"
 
 [dependencies]
+socket2 = { version = "0.5", features = ["all"] }
+libc = "0.2"
+thiserror = "1.0"
+
+[dev-dependencies]
+tempfile = "3.8"
