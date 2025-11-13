@@ -11,3 +11,7 @@ src/.deps/
 src/.dirstamp
 lib/.deps/
 lib/.dirstamp
+
+# Rust build artifacts
+target/
+Cargo.lock
