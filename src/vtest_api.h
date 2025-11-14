@@ -87,6 +87,10 @@ void vtc_wait4(struct vtclog *, long, int, int, int);
 
 void cmd_server_gen_vcl(struct vsb *vsb);
 
+typedef char* macro_f(int, char *const *, const char **);
+void extmacro_def(const char *name, macro_f *func, const char *fmt, ...)
+    v_printflike_(3, 4);
+
 void macro_undef(struct vtclog *vl, const char *instance, const char *name);
 void macro_def(struct vtclog *vl, const char *instance, const char *name,
     const char *fmt, ...) v_printflike_(4, 5);

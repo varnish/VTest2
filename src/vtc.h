@@ -101,10 +101,6 @@ int exec_file(const char *fn, const char *script, const char *tmpdir,
     char *logbuf, unsigned loglen);
 
 
-typedef char* macro_f(int, char *const *, const char **);
-void extmacro_def(const char *name, macro_f *func, const char *fmt, ...)
-    v_printflike_(3, 4);
-
 struct http;
 void cmd_stream(CMD_ARGS);
 void start_h2(struct http *hp);
