@@ -105,6 +105,8 @@ static int vtc_verbosity = 1;		/* Verbosity Level */
 static int vtc_good;
 static int vtc_fail;
 static int vtc_skip;
+static int vtc_use_cleaner = 0;
+static int vtc_ntest = 1;		/* Run tests this many times */
 static char *tmppath;
 static char *cwd = NULL;
 char *vmod_path = NULL;
@@ -116,6 +118,25 @@ static int bad_backend_fd;
 static int cleaner_fd = -1;
 static pid_t cleaner_pid;
 const char *default_listen_addr;
+
+/**********************************************************************
+ * autocrap test-driver command arguments
+ */
+
+#define TDARGS(MACRO) \
+	MACRO("--test-name",		td_test_name) \
+	MACRO("--log-file",		td_log_file) \
+	MACRO("--trs-file",		td_trs_file) \
+	MACRO("--color-tests",		td_color_tests) \
+	MACRO("--collect_skipped_logs",	td_collect_skipped_logs) \
+	MACRO("--expect-failure",	td_expect_failure) \
+	MACRO("--enable-hard-errors",	td_enable_hard_errors)
+
+#define TDVAR(name, dst) static const char *dst;
+	TDARGS(TDVAR)
+#undef TDVAR
+
+/**********************************************************************/
 
 static struct buf *
 get_buf(void)
@@ -353,6 +374,28 @@ tst_cb(const struct vev *ve, int what)
 			AZ(fclose(f));
 		}
 		free(jp->tmpdir);
+
+		if (td_log_file != NULL) {
+			FILE *f = fopen(td_log_file, "w");
+			AN(f);
+			(void)fprintf(f, "%s\n", VSB_data(cbvsb));
+			AZ(fclose(f));
+		}
+		if (td_trs_file != NULL) {
+			FILE *f = fopen(td_trs_file, "w");
+			AN(f);
+			if (jp->killed || ecode > 1) {
+				fprintf(f, ":test-result: FAIL\n");
+				fprintf(f, ":global-log-copy: yes\n");
+			} else if (ecode) {
+				fprintf(f, ":test-result: SKIP\n");
+				fprintf(f, ":global-log-copy: yes\n");
+			} else {
+				fprintf(f, ":test-result: PASS\n");
+				fprintf(f, ":global-log-copy: no\n");
+			}
+			AZ(fclose(f));
+		}
 
 		if (jp->killed)
 			printf("#    top  TEST %s TIMED OUT (kill -9)\n",
@@ -763,7 +806,7 @@ macro_func_string(int argc, char *const *argv, const char **err)
  */
 
 static int
-read_file(const char *fn, int ntest)
+read_file(const char *fn)
 {
 	struct vtc_tst *tp;
 	char *p, *q;
@@ -803,10 +846,139 @@ read_file(const char *fn, int ntest)
 	AN(tp);
 	tp->filename = fn;
 	tp->script = p;
-	tp->ntodo = ntest;
-	tp->nwait = ntest;
+	tp->ntodo = vtc_ntest;
+	tp->nwait = vtc_ntest;
 	VTAILQ_INSERT_TAIL(&tst_head, tp, list);
 	return (0);
+}
+
+/**********************************************************************
+ * autocrap test-driver command arguments
+ */
+
+static void
+automake_test_driver_arguments(int argc, char *const *argv)
+{
+
+        argc -= 1;
+        argv += 1;
+
+        while (argc > 1) {
+#define TDSAVE(name, dst) \
+		if (!strcmp(*argv, name)) { \
+			dst = argv[1]; \
+			AN(dst); \
+			argc -= 2; \
+			argv += 2; \
+			continue; \
+		}
+	TDARGS(TDSAVE)
+#undef TDSAVE
+		if (!strcmp(*argv, "--extension")) {
+			add_extension(argv[1]);
+			argc -= 2;
+			argv += 2;
+			continue;
+		}
+		if (strcmp(*argv, "--")) {
+			fprintf(stderr, "Not '--': '%s'\n", *argv);
+			usage();
+		}
+		if (read_file(argv[1]))
+			usage();
+                printf("Running test %s\n", argv[1]);
+		break;
+        }
+	vtc_verbosity = 0;
+}
+
+/**********************************************************************
+ * Usual command arguments
+ */
+
+static void
+usual_arguments(int argc, char *const *argv)
+{
+	int ch;
+	uintmax_t bufsiz;
+
+	while ((ch = getopt(argc, argv, "b:CD:E:hij:kLln:p:qt:vW")) != -1) {
+		switch (ch) {
+		case 'b':
+			if (VNUM_2bytes(optarg, &bufsiz, 0)) {
+				fprintf(stderr, "Cannot parse b opt '%s'\n",
+				    optarg);
+				exit(2);
+			}
+			if (bufsiz > UINT_MAX) {
+				fprintf(stderr, "Invalid b opt '%s'\n",
+				    optarg);
+				exit(2);
+			}
+			vtc_bufsiz = (unsigned)bufsiz;
+			break;
+		case 'C':
+			vtc_use_cleaner = !vtc_use_cleaner;
+			break;
+		case 'D':
+			if (!parse_D_opt(optarg)) {
+				fprintf(stderr, "Cannot parse D opt '%s'\n",
+				    optarg);
+				exit(2);
+			}
+			break;
+		case 'E':
+			add_extension(optarg);
+			break;
+		case 'i':
+			iflg = 1;
+			break;
+		case 'j':
+			npar = strtoul(optarg, NULL, 0);
+			break;
+		case 'L':
+			leave_temp = 2;
+			break;
+		case 'l':
+			leave_temp = 1;
+			break;
+		case 'k':
+			vtc_continue = !vtc_continue;
+			break;
+		case 'n':
+			vtc_ntest = strtoul(optarg, NULL, 0);
+			break;
+		case 'p':
+			VSB_cat(params_vsb, " -p ");
+			VSB_quote(params_vsb, optarg, -1, 0);
+			break;
+		case 'q':
+			if (vtc_verbosity > 0)
+				vtc_verbosity--;
+			break;
+		case 't':
+			vtc_maxdur = strtoul(optarg, NULL, 0);
+			break;
+		case 'v':
+			if (vtc_verbosity < 2)
+				vtc_verbosity++;
+			break;
+		default:
+			usage();
+		}
+	}
+	argc -= optind;
+	argv += optind;
+
+	if (argc < 1)
+		usage();
+
+	for (; argc > 0; argc--, argv++) {
+		if (!read_file(*argv))
+			continue;
+		if (!vtc_continue)
+			exit(2);
+	}
 }
 
 /**********************************************************************
@@ -816,11 +988,8 @@ read_file(const char *fn, int ntest)
 int
 main(int argc, char * const *argv)
 {
-	int ch, i;
-	int ntest = 1;			/* Run tests this many times */
+	int i;
 	int nstart = 0;
-	int use_cleaner = 0;
-	uintmax_t bufsiz;
 	const char *p;
 	char buf[PATH_MAX];
 
@@ -863,83 +1032,16 @@ main(int argc, char * const *argv)
 	AN(cbvsb);
 	setbuf(stdout, NULL);
 	setbuf(stderr, NULL);
-	while ((ch = getopt(argc, argv, "b:CD:E:hij:kLln:p:qt:vW")) != -1) {
-		switch (ch) {
-		case 'b':
-			if (VNUM_2bytes(optarg, &bufsiz, 0)) {
-				fprintf(stderr, "Cannot parse b opt '%s'\n",
-				    optarg);
-				exit(2);
-			}
-			if (bufsiz > UINT_MAX) {
-				fprintf(stderr, "Invalid b opt '%s'\n",
-				    optarg);
-				exit(2);
-			}
-			vtc_bufsiz = (unsigned)bufsiz;
-			break;
-		case 'C':
-			use_cleaner = !use_cleaner;
-			break;
-		case 'D':
-			if (!parse_D_opt(optarg)) {
-				fprintf(stderr, "Cannot parse D opt '%s'\n",
-				    optarg);
-				exit(2);
-			}
-			break;
-		case 'E':
-			add_extension(optarg);
-			break;
-		case 'i':
-			iflg = 1;
-			break;
-		case 'j':
-			npar = strtoul(optarg, NULL, 0);
-			break;
-		case 'L':
-			leave_temp = 2;
-			break;
-		case 'l':
-			leave_temp = 1;
-			break;
-		case 'k':
-			vtc_continue = !vtc_continue;
-			break;
-		case 'n':
-			ntest = strtoul(optarg, NULL, 0);
-			break;
-		case 'p':
-			VSB_cat(params_vsb, " -p ");
-			VSB_quote(params_vsb, optarg, -1, 0);
-			break;
-		case 'q':
-			if (vtc_verbosity > 0)
-				vtc_verbosity--;
-			break;
-		case 't':
-			vtc_maxdur = strtoul(optarg, NULL, 0);
-			break;
-		case 'v':
-			if (vtc_verbosity < 2)
-				vtc_verbosity++;
-			break;
-		default:
-			usage();
-		}
-	}
-	argc -= optind;
-	argv += optind;
 
-	if (argc < 1)
+	if (argc < 2)
 		usage();
 
-	for (; argc > 0; argc--, argv++) {
-		if (!read_file(*argv, ntest))
-			continue;
-		if (!vtc_continue)
-			exit(2);
+	if (argv[1][0] == '-' && argv[1][1] == '-') {
+		automake_test_driver_arguments(argc, argv);
+	} else {
+		usual_arguments(argc, argv);
 	}
+
 
 	AZ(VSB_finish(params_vsb));
 
@@ -950,7 +1052,7 @@ main(int argc, char * const *argv)
 
 	vb = VEV_New();
 
-	if (use_cleaner)
+	if (vtc_use_cleaner)
 		cleaner_setup();
 
 	i = 0;
