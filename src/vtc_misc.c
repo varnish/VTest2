@@ -641,7 +641,7 @@ cmd_feature(CMD_ARGS)
 		if (!strcmp(feat, "user")) {
 			av++;
 			if (*av == NULL)
-				vtc_fatal(vl, "Missing usern-name");
+				vtc_fatal(vl, "Missing username");
 			good = 1;
 			if (getpwnam(*av) != NULL)
 				skip = neg;
@@ -650,7 +650,7 @@ cmd_feature(CMD_ARGS)
 		} else if (!strcmp(feat, "group")) {
 			av++;
 			if (*av == NULL)
-				vtc_fatal(vl, "Missing usern-name");
+				vtc_fatal(vl, "Missing groupname");
 			good = 1;
 			if (getgrnam(*av) != NULL)
 				skip = neg;
