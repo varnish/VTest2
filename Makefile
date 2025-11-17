@@ -22,7 +22,7 @@ DEPS=	lib/*.h \
 FLAGS=	-O2 -Wall -Werror
 
 CFLAGS=  ${FLAGS}
-LDFLAGS= ${FLAGS} -rdynamic -ldl
+LDFLAGS= ${FLAGS} -rdynamic
 DEFINES=
 
 INCS=	-I. \
@@ -34,7 +34,8 @@ INCS=	-I. \
 LIBS=	-L/usr/local/lib \
 	-lm \
 	-lpcre2-8 \
-	-lz
+	-lz \
+	-ldl
 
 #######################################################################
 # If you want to build vtest without varnish support, use this part:
