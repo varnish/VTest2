@@ -407,7 +407,7 @@ tst_cb(const struct vev *ve, int what)
 				printf(" signal=%d\n", WTERMSIG(stx));
 			else if (WIFEXITED(stx))
 				printf(" exit=%d\n", WEXITSTATUS(stx));
-			if (!vtc_continue) {
+			if (!vtc_continue && td_trs_file == NULL) {
 				/* XXX kill -9 other jobs ? */
 				exit(2);
 			}
@@ -1070,6 +1070,8 @@ main(int argc, char * const *argv)
 	}
 	cleaner_finish();
 	(void)close(bad_backend_fd);
+	if (td_trs_file != 0)
+		return(0);
 	if (vtc_continue)
 		fprintf(stderr,
 		    "%d tests failed, %d tests skipped, %d tests passed\n",
