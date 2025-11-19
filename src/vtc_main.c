@@ -376,13 +376,13 @@ tst_cb(const struct vev *ve, int what)
 		free(jp->tmpdir);
 
 		if (td_log_file != NULL) {
-			FILE *f = fopen(td_log_file, "w");
+			f = fopen(td_log_file, "w");
 			AN(f);
 			(void)fprintf(f, "%s\n", VSB_data(cbvsb));
 			AZ(fclose(f));
 		}
 		if (td_trs_file != NULL) {
-			FILE *f = fopen(td_trs_file, "w");
+			f = fopen(td_trs_file, "w");
 			AN(f);
 			if (jp->killed || ecode > 1) {
 				fprintf(f, ":test-result: FAIL\n");
