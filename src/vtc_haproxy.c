@@ -1006,6 +1006,7 @@ haproxy_build_backends(struct haproxy *h, const char *vsb_data)
 			 !memcmp(p - HAPROXY_VTC_SOCK_TYPE_PREFIX_LEN,
 			         HAPROXY_VTC_SOCK_TYPE_PREFIX,
 			         HAPROXY_VTC_SOCK_TYPE_PREFIX_LEN) &&
+			 sock_type != NULL &&
 			 !strcmp(sock_type, HAPROXY_QUIC_SOCK_TYPE));
 
 		q = p += HAPROXY_FD_ADDR_FAM_PREFIX_LEN;
