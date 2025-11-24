@@ -26,8 +26,6 @@
  * SUCH DAMAGE.
  */
 
-#include "config.h"
-
 struct vsb;
 
 void VBT_format(struct vsb *);

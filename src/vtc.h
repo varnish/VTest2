@@ -56,7 +56,6 @@ int fail_out(void);
 #define CMD_TOP(n) cmd_f cmd_##n;
 #include "cmds.h"
 
-extern volatile sig_atomic_t vtc_error; /* Error, bail out */
 extern int iflg;
 extern int ign_unknown_macro;
 

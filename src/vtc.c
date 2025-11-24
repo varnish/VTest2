@@ -172,7 +172,7 @@ add_extension(const char *name)
 		    name, strerror(errno));
 		exit(2);
 	}
-	close(fd);
+	closefd(&fd);
 
 	ALLOC_OBJ(ep, EXTENSION_MAGIC);
 	AN(ep);
