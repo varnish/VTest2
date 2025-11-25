@@ -826,7 +826,7 @@ varnish_cli(struct varnish *v, const char *cli, unsigned exp, const char *re,
 			VSB_fini(vsb);
 			varnish_fatal(v, "Regexp failed: %s with %s (%d)",
 			    re, errbuf, err);
-		} else if ((err == VRE_ERROR_NOMATCH) == (neg == 0)) {
+		} else if ((err == VRE_ERROR_NOMATCH) == (neg == 0)) { /*lint !e731 */
 			varnish_fatal(v, "Expect failed: regexp \"%s\" did%s "
 			    "match response \"%s\"", re, neg ? "" : " not",
 			    resp);
