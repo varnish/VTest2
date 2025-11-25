@@ -792,7 +792,8 @@ varnish_cli_json(struct varnish *v, const char *cli)
  */
 
 static void
-varnish_cli(struct varnish *v, const char *cli, unsigned exp, const char *re)
+varnish_cli(struct varnish *v, const char *cli, unsigned exp, const char *re,
+    int neg)
 {
 	enum VCLI_status_e u;
 	struct vsb vsb[1];
@@ -818,13 +819,17 @@ varnish_cli(struct varnish *v, const char *cli, unsigned exp, const char *re)
 		varnish_fatal(v, "FAIL CLI response %u expected %u", u, exp);
 	if (vre != NULL) {
 		err = VRE_match(vre, resp, 0, 0, NULL);
-		if (err < 1) {
+		if (err < VRE_ERROR_NOMATCH) {
 			AN(VSB_init(vsb, errbuf, sizeof errbuf));
 			AZ(VRE_error(vsb, err));
 			AZ(VSB_finish(vsb));
 			VSB_fini(vsb);
-			varnish_fatal(v, "Expect failed (%s), "
-			    "response was \"%s\"", errbuf, resp);
+			varnish_fatal(v, "Regexp failed: %s with %s (%d)",
+			    re, errbuf, err);
+		} else if ((err == VRE_ERROR_NOMATCH) == (neg == 0)) {
+			varnish_fatal(v, "Expect failed: regexp \"%s\" did%s "
+			    "match response \"%s\"", re, neg ? "" : " not",
+			    resp);
 		}
 		VRE_free(&vre);
 	}
@@ -1190,11 +1195,12 @@ vsl_catchup(struct varnish *v)
  *         varnish vNAME [-cli STRING] [-cliok STRING] [-clierr STRING]
  *                       [-clijson STRING]
  *
- * \-cli STRING|-cliok STRING|-clierr STATUS STRING|-cliexpect REGEXP STRING
+ * \-cli STRING|-cliok STRING|-clierr STATUS STRING|-cliexpect [!] REGEXP STRING
  *         All four of these will send STRING to the CLI, the only difference
  *         is what they expect the result to be. -cli doesn't expect
  *         anything, -cliok expects 200, -clierr expects STATUS, and
  *         -cliexpect expects the REGEXP to match the returned response.
+ *         -cliexpect ! ... negates the match
  *
  * \-clijson STRING
  *	   Send STRING to the CLI, expect success (CLIS_OK/200) and check
@@ -1275,21 +1281,28 @@ cmd_varnish(CMD_ARGS)
 		}
 		if (!strcmp(*av, "-cli")) {
 			AN(av[1]);
-			varnish_cli(v, av[1], 0, NULL);
+			varnish_cli(v, av[1], 0, NULL, 0);
 			av++;
 			continue;
 		}
 		if (!strcmp(*av, "-clierr")) {
 			AN(av[1]);
 			AN(av[2]);
-			varnish_cli(v, av[2], atoi(av[1]), NULL);
+			varnish_cli(v, av[2], atoi(av[1]), NULL, 0);
 			av += 2;
 			continue;
 		}
 		if (!strcmp(*av, "-cliexpect")) {
+			int neg = 0;
+
 			AN(av[1]);
 			AN(av[2]);
-			varnish_cli(v, av[2], 0, av[1]);
+			if (*av[1] == '!') {
+				neg = 1;
+				av++;
+				AN(av[2]);
+			}
+			varnish_cli(v, av[2], 0, av[1], neg);
 			av += 2;
 			continue;
 		}
@@ -1301,7 +1314,7 @@ cmd_varnish(CMD_ARGS)
 		}
 		if (!strcmp(*av, "-cliok")) {
 			AN(av[1]);
-			varnish_cli(v, av[1], (unsigned)CLIS_OK, NULL);
+			varnish_cli(v, av[1], (unsigned)CLIS_OK, NULL, 0);
 			av++;
 			continue;
 		}
