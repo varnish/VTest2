@@ -150,18 +150,28 @@ teken_utf8_bytes_to_codepoint(uint8_t bytes[4], int nbytes)
 	 * length of 1). Here we flip the 4 upper bits and count the leading
 	 * zeros using __builtin_clz() to determine the number of bytes.
 	 */
+#if 0
 	if (__builtin_clz(~(bytes[0] & 0xf0) << 24) != nbytes)
 		return (TEKEN_UTF8_INVALID_CODEPOINT);
+#endif
 
 	switch (nbytes) {
 	case 1:
+		if (bytes[0] & 0x80)
+			return (TEKEN_UTF8_INVALID_CODEPOINT);
 		return (bytes[0] & 0x7f);
 	case 2:
+		if ((bytes[0] & 0xe0) != 0xc0)
+			return (TEKEN_UTF8_INVALID_CODEPOINT);
 		return (bytes[0] & 0x1f) << 6 | (bytes[1] & 0x3f);
 	case 3:
+		if ((bytes[0] & 0xf0) != 0xe0)
+			return (TEKEN_UTF8_INVALID_CODEPOINT);
 		return (bytes[0] & 0xf) << 12 | (bytes[1] & 0x3f) << 6 |
 		    (bytes[2] & 0x3f);
 	case 4:
+		if ((bytes[0] & 0xf8) != 0xf0)
+			return (TEKEN_UTF8_INVALID_CODEPOINT);
 		return (bytes[0] & 0x7) << 18 | (bytes[1] & 0x3f) << 12 |
 		    (bytes[2] & 0x3f) << 6 | (bytes[3] & 0x3f);
 	default:
