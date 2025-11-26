@@ -370,7 +370,7 @@ teken_subr_cursor_up(teken_t *t, unsigned int nrows)
 }
 
 static void
-teken_subr_set_cursor_style(teken_t *t __unused, unsigned int style __unused)
+teken_subr_set_cursor_style(teken_t *t, unsigned int style)
 {
 
 	/* TODO */
