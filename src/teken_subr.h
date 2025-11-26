@@ -1,5 +1,5 @@
 /*-
- * SPDX-License-Identifier: BSD-2-Clause-FreeBSD
+ * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright (c) 2008-2009 Ed Schouten <ed@FreeBSD.org>
  * All rights reserved.
@@ -24,8 +24,6 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- * $FreeBSD: head/sys/teken/teken_subr.h 333995 2018-05-21 20:35:16Z dumbbell $
  */
 
 static void teken_subr_cursor_up(teken_t *, unsigned int);
@@ -372,7 +370,7 @@ teken_subr_cursor_up(teken_t *t, unsigned int nrows)
 }
 
 static void
-teken_subr_set_cursor_style(teken_t *t, unsigned int style)
+teken_subr_set_cursor_style(teken_t *t __unused, unsigned int style __unused)
 {
 
 	/* TODO */
@@ -1339,8 +1337,11 @@ teken_subr_vertical_position_absolute(teken_t *t, unsigned int row)
 static void
 teken_subr_repeat_last_graphic_char(teken_t *t, unsigned int rpts)
 {
+	unsigned int max_repetitions;
 
+	max_repetitions = t->t_winsize.tp_row * t->t_winsize.tp_col;
+	if (rpts > max_repetitions)
+		rpts = max_repetitions;
 	for (; t->t_last != 0 && rpts > 0; rpts--)
 		teken_subr_regular_character(t, t->t_last);
 }
-

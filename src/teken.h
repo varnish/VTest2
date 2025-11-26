@@ -1,5 +1,5 @@
 /*-
- * SPDX-License-Identifier: BSD-2-Clause-FreeBSD
+ * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright (c) 2008-2009 Ed Schouten <ed@FreeBSD.org>
  * All rights reserved.
@@ -24,8 +24,6 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- * $FreeBSD: head/sys/teken/teken.h 333669 2018-05-16 09:01:02Z dumbbell $
  */
 
 #ifndef _TEKEN_H_
@@ -48,11 +46,12 @@ typedef unsigned char teken_format_t;
 #define	TF_BLINK	0x04	/* Blinking character. */
 #define	TF_REVERSE	0x08	/* Reverse rendered character. */
 #define	TF_CJK_RIGHT	0x10	/* Right-hand side of CJK character. */
+#define TF_IMAGE	0x20	/* This character space has image. */
 typedef unsigned char teken_color_t;
 #define	TC_BLACK	0
 #define	TC_RED		1
 #define	TC_GREEN	2
-#define	TC_BROWN	3
+#define	TC_YELLOW	3
 #define	TC_BLUE		4
 #define	TC_MAGENTA	5
 #define	TC_CYAN		6

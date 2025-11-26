@@ -1,5 +1,5 @@
 /*-
- * SPDX-License-Identifier: BSD-2-Clause-FreeBSD
+ * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright (c) 2008-2009 Ed Schouten <ed@FreeBSD.org>
  * All rights reserved.
@@ -24,8 +24,6 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- * $FreeBSD: head/sys/teken/teken.c 333683 2018-05-16 18:12:49Z cem $
  */
 
 #include "config.h"
@@ -476,7 +474,7 @@ teken_state_numbers(teken_t *t, teken_char_t c)
 
 #define	k	TC_BLACK
 #define	b	TC_BLUE
-#define	y	TC_BROWN
+#define	y	TC_YELLOW
 #define	c	TC_CYAN
 #define	g	TC_GREEN
 #define	m	TC_MAGENTA
@@ -484,7 +482,7 @@ teken_state_numbers(teken_t *t, teken_char_t c)
 #define	w	TC_WHITE
 #define	K	(TC_BLACK | TC_LIGHT)
 #define	B	(TC_BLUE | TC_LIGHT)
-#define	Y	(TC_BROWN | TC_LIGHT)
+#define	Y	(TC_YELLOW | TC_LIGHT)
 #define	C	(TC_CYAN | TC_LIGHT)
 #define	G	(TC_GREEN | TC_LIGHT)
 #define	M	(TC_MAGENTA | TC_LIGHT)
