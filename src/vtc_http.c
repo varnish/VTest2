@@ -1891,6 +1891,8 @@ http_process_cleanup(void *arg)
 
 	CAST_OBJ_NOTNULL(hp, arg, HTTP_MAGIC);
 
+	if (vtc_error && hp->sess->fd >= 0)
+		VTCP_close(&hp->sess->fd);
 	if (hp->h2)
 		stop_h2(hp);
 	VSB_destroy(&hp->vsb);
