@@ -91,7 +91,8 @@ pp2cmp(const void *va, const void *vb)
 void
 vtc_proxy_tlv(struct vtclog *vl, struct vsb *vsb, const char *kva)
 {
-	struct pp2_type *pp2, needle;
+	const struct pp2_type *pp2;
+	struct pp2_type needle;
 	char *save = NULL, *kv;
 	struct vsb *vsb2;
 	const char *p;
