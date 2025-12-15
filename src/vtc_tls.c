@@ -904,7 +904,7 @@ msg_cb(int write_p, int version, int content_type, const void *buf,
 	}
 }
 
-void *
+static void *
 tls_server_setup(const char *spec, struct vtclog *vl)
 {
 	struct tlsctx *cfg;
@@ -932,7 +932,7 @@ tls_server_setup(const char *spec, struct vtclog *vl)
 	return (cfg);
 }
 
-void *
+static void *
 tls_client_setup(const char *spec, struct vtclog *vl)
 {
 	struct tlsctx *cfg;
