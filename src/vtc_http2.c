@@ -207,6 +207,7 @@ get_bytes(const struct http *hp, char *buf, size_t n)
 			    hp->sess->fd, strerror(errno));
 		if (i <= 0)
 			return (i);
+		buf += i;
 		n -= i;
 	}
 	return (1);
