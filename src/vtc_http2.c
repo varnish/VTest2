@@ -160,7 +160,7 @@ http_write(const struct http *hp, int lvl,
 	AN(pfx);
 
 	vtc_dump(hp->vl, lvl, pfx, buf, s);
-	l = write(hp->sess->fd, buf, s);
+	l = hp->so->write(hp, buf, s);
 	if (l != s)
 		vtc_log(hp->vl, hp->fatal, "Write failed: (%zd vs %d) %s",
 		    l, s, strerror(errno));
@@ -170,16 +170,14 @@ static int
 get_bytes(const struct http *hp, char *buf, size_t n)
 {
 	int i;
-	struct pollfd pfd[1];
+	short revents;
 
 	CHECK_OBJ_NOTNULL(hp, HTTP_MAGIC);
 	AN(buf);
 
 	while (n > 0) {
-		pfd[0].fd = hp->sess->fd;
-		pfd[0].events = POLLIN;
-		pfd[0].revents = 0;
-		i = poll(pfd, 1, (int)(hp->timeout * 1000));
+		revents = POLLIN;
+		i = hp->so->poll(hp, &revents, NAN);
 		if (i < 0 && errno == EINTR)
 			continue;
 		if (i == 0)
@@ -192,11 +190,11 @@ get_bytes(const struct http *hp, char *buf, size_t n)
 			    hp->sess->fd, strerror(errno));
 		if (i <= 0)
 			return (i);
-		i = read(hp->sess->fd, buf, n);
-		if (!(pfd[0].revents & POLLIN))
+		i = hp->so->read(hp, buf, n);
+		if (!(revents & POLLIN))
 			vtc_log(hp->vl, 4,
 			    "HTTP2 rx poll (fd:%d revents: %x n=%zu, i=%d)",
-			    hp->sess->fd, pfd[0].revents, n, i);
+			    hp->sess->fd, revents, n, i);
 		if (i == 0)
 			vtc_log(hp->vl, 3,
 			    "HTTP2 rx EOF (fd:%d read: %s)",
@@ -347,14 +345,14 @@ write_frame(struct stream *sp, const struct frame *f, const unsigned lock)
 
 	if (lock)
 		PTOK(pthread_mutex_lock(&hp->mtx));
-	l = write(hp->sess->fd, hdr, sizeof(hdr));
+	l = hp->so->write(hp, hdr, sizeof(hdr));
 	if (l != sizeof(hdr))
 		vtc_log(sp->vl, hp->fatal, "Write failed: (%zd vs %zd) %s",
 		    l, sizeof(hdr), strerror(errno));
 
 	if (f->size) {
 		AN(f->data);
-		l = write(hp->sess->fd, f->data, f->size);
+		l = hp->so->write(hp, f->data, f->size);
 		if (l != f->size)
 			vtc_log(sp->vl, hp->fatal,
 					"Write failed: (%zd vs %d) %s",
