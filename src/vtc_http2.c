@@ -183,26 +183,26 @@ get_bytes(const struct http *hp, char *buf, size_t n)
 		if (i == 0)
 			vtc_log(hp->vl, 3,
 			    "HTTP2 rx timeout (fd:%d %.3fs)",
-			    hp->sess->fd, hp->timeout);
+			    *hp->sess->fd, hp->timeout);
 		if (i < 0)
 			vtc_log(hp->vl, 3,
 			    "HTTP2 rx failed (fd:%d poll: %s)",
-			    hp->sess->fd, strerror(errno));
+			    *hp->sess->fd, strerror(errno));
 		if (i <= 0)
 			return (i);
 		i = hp->so->read(hp, buf, n);
 		if (!(revents & POLLIN))
 			vtc_log(hp->vl, 4,
 			    "HTTP2 rx poll (fd:%d revents: %x n=%zu, i=%d)",
-			    hp->sess->fd, revents, n, i);
+			    *hp->sess->fd, revents, n, i);
 		if (i == 0)
 			vtc_log(hp->vl, 3,
 			    "HTTP2 rx EOF (fd:%d read: %s)",
-			    hp->sess->fd, strerror(errno));
+			    *hp->sess->fd, strerror(errno));
 		if (i < 0)
 			vtc_log(hp->vl, 3,
 			    "HTTP2 rx failed (fd:%d read: %s)",
-			    hp->sess->fd, strerror(errno));
+			    *hp->sess->fd, strerror(errno));
 		if (i <= 0)
 			return (i);
 		buf += i;

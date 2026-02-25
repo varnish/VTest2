@@ -100,16 +100,14 @@ Sess_GetOpt(struct vtc_sess *vsp, char * const **avp)
 	return (rv);
 }
 
-int
+void
 sess_process(struct vtclog *vl, struct vtc_sess *vsp,
-    const char *spec, int sock, int *sfd, const char *addr)
+    const char *spec, int *sock, int *sfd, const char *addr)
 {
-	int rv;
 
 	CHECK_OBJ_NOTNULL(vsp, VTC_SESS_MAGIC);
 
-	rv = http_process(vl, vsp, spec, sock, sfd, addr, vsp->rcvbuf);
-	return (rv);
+	http_process(vl, vsp, spec, sock, sfd, addr, vsp->rcvbuf);
 }
 
 static void *
@@ -135,7 +133,7 @@ sess_thread(void *priv)
 	for (i = 0; i < vsp->repeat; i++) {
 		if (fd < 0)
 			fd = ta.conn_f(ta.priv, vl);
-		fd = sess_process(vl, ta.vsp, ta.spec, fd,
+		sess_process(vl, ta.vsp, ta.spec, &fd,
 		    ta.asocket, ta.listen_addr);
 		if (! vsp->keepalive)
 			ta.disc_f(ta.priv, vl, &fd);

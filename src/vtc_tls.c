@@ -817,7 +817,7 @@ tlsconn_read(const struct http *hp, void *buf, size_t len)
 	CHECK_OBJ_NOTNULL(hp, HTTP_MAGIC);
 	CAST_OBJ_NOTNULL(c, hp->tlsconn, TLSCONN_MAGIC);
 	AN(c->ssl);
-	assert(hp->sess->fd == SSL_get_fd(c->ssl));
+	assert(*hp->sess->fd == SSL_get_fd(c->ssl));
 	i = SSL_read(c->ssl, buf, len);
 	if (i <= 0) {
 		c->failed = 1;
@@ -835,7 +835,7 @@ tlsconn_write(const struct http *hp, const void *buf, size_t len)
 	CHECK_OBJ_NOTNULL(hp, HTTP_MAGIC);
 	CAST_OBJ_NOTNULL(c, hp->tlsconn, TLSCONN_MAGIC);
 	AN(c->ssl);
-	assert(hp->sess->fd == SSL_get_fd(c->ssl));
+	assert(*hp->sess->fd == SSL_get_fd(c->ssl));
 	i = SSL_write(c->ssl, buf, len);
 	if (i <= 0) {
 		c->failed = 1;
@@ -863,7 +863,7 @@ tlsconn_close(struct http *hp)
 		VSB_destroy(&c->subject_alt_names);
 
 	FREE_OBJ(c);
-	VTCP_close(&hp->sess->fd);
+	VTCP_close(hp->sess->fd);
 }
 
 static const struct sess_ops tlsconn_so = {
@@ -1603,7 +1603,7 @@ cmd_http_tls_handshake(CMD_ARGS)
 	conn->ssl = SSL_new(cfg->ctx);
 	AN(conn->ssl);
 	conn->vl = vl;
-	AN(SSL_set_fd(conn->ssl, hp->sess->fd));
+	AN(SSL_set_fd(conn->ssl, *hp->sess->fd));
 	if (cfg->type == TLS_CLIENT) {
 		SSL_set_connect_state(conn->ssl);
 		if (cfg->c->servername)
@@ -1623,9 +1623,9 @@ cmd_http_tls_handshake(CMD_ARGS)
 	if (cfg->type == TLS_CLIENT && cfg->c->sess_in)
 		vtc_sess_set(conn, cfg->c->sess_in);
 
-	VTCP_nonblocking(hp->sess->fd);
+	VTCP_nonblocking(*hp->sess->fd);
 	i = tls_handshake(hp, conn);
-	VTCP_blocking(hp->sess->fd);
+	VTCP_blocking(*hp->sess->fd);
 	if (i != 1) {
 		vtc_tlserr(vl);
 		vtc_log(vl, 3, "TLS handshake failed");

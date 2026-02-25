@@ -522,13 +522,13 @@ http_rxchar(struct http *hp, int n, int eof)
 		if (i == 0) {
 			vtc_log(hp->vl, hp->fatal,
 			    "HTTP rx timeout (fd:%d %.3fs)",
-			    hp->sess->fd, hp->timeout);
+			    *hp->sess->fd, hp->timeout);
 			continue;
 		}
 		if (i < 0) {
 			vtc_log(hp->vl, hp->fatal,
 			    "HTTP rx failed (fd:%d poll: %s)",
-			    hp->sess->fd, strerror(errno));
+			    *hp->sess->fd, strerror(errno));
 			continue;
 		}
 		assert(i > 0);
@@ -537,19 +537,19 @@ http_rxchar(struct http *hp, int n, int eof)
 		if (!(ev & POLLIN))
 			vtc_log(hp->vl, 4,
 			    "HTTP rx poll (fd:%d revents: %x n=%d, i=%d)",
-			    hp->sess->fd, ev, n, i);
+			    *hp->sess->fd, ev, n, i);
 		if (i == 0 && eof)
 			return (i);
 		if (i == 0) {
 			vtc_log(hp->vl, hp->fatal,
 			    "HTTP rx EOF (fd:%d read: %s) %d",
-			    hp->sess->fd, strerror(errno), n);
+			    *hp->sess->fd, strerror(errno), n);
 			return (-1);
 		}
 		if (i < 0) {
 			vtc_log(hp->vl, hp->fatal,
 			    "HTTP rx failed (fd:%d read: %s)",
-			    hp->sess->fd, strerror(errno));
+			    *hp->sess->fd, strerror(errno));
 			return (-1);
 		}
 		hp->rx_p += i;
@@ -1387,7 +1387,7 @@ cmd_http_send_urgent(CMD_ARGS)
 	AN(av[1]);
 	AZ(av[2]);
 	vtc_dump(hp->vl, 4, "send_urgent", av[1], -1);
-	i = send(hp->sess->fd, av[1], strlen(av[1]), MSG_OOB);
+	i = send(*hp->sess->fd, av[1], strlen(av[1]), MSG_OOB);
 	if (i != strlen(av[1]))
 		vtc_log(hp->vl, hp->fatal,
 		    "Write error in http_send_urgent(): %s", strerror(errno));
@@ -1414,7 +1414,7 @@ cmd_http_sendhex(CMD_ARGS)
 	vsb = vtc_hex_to_bin(hp->vl, av[1]);
 	assert(VSB_len(vsb) >= 0);
 	vtc_hexdump(hp->vl, 4, "sendhex", VSB_data(vsb), VSB_len(vsb));
-	if (VSB_tofile(vsb, hp->sess->fd))
+	if (VSB_tofile(vsb, *hp->sess->fd))
 		vtc_log(hp->vl, hp->fatal, "Write failed: %s",
 		    strerror(errno));
 	VSB_destroy(&vsb);
@@ -1520,7 +1520,7 @@ cmd_http_expect_close(CMD_ARGS)
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
 	AZ(av[1]);
 
-	vtc_log(vl, 4, "Expecting close (fd = %d)", hp->sess->fd);
+	vtc_log(vl, 4, "Expecting close (fd = %d)", *hp->sess->fd);
 	if (hp->h2)
 		stop_h2(hp);
 	while (1) {
@@ -1542,7 +1542,7 @@ cmd_http_expect_close(CMD_ARGS)
 		vtc_log(vl, hp->fatal,
 		    "Expecting close: read = %d, c = 0x%02x", i, c);
 	}
-	vtc_log(vl, 4, "fd=%d EOF, as expected", hp->sess->fd);
+	vtc_log(vl, 4, "fd=%d EOF, as expected", *hp->sess->fd);
 }
 
 /* SECTION: client-server.spec.close
@@ -1590,10 +1590,10 @@ cmd_http_accept(CMD_ARGS)
 	if (hp->sess->fd >= 0)
 		hp->so->close(hp);
 	vtc_log(vl, 4, "Accepting");
-	hp->sess->fd = accept(*hp->sfd, NULL, NULL);
-	if (hp->sess->fd < 0)
+	*hp->sess->fd = accept(*hp->sfd, NULL, NULL);
+	if (*hp->sess->fd < 0)
 		vtc_log(vl, hp->fatal, "Accepted failed: %s", strerror(errno));
-	vtc_log(vl, 3, "Accepted socket fd is %d", hp->sess->fd);
+	vtc_log(vl, 3, "Accepted socket fd is %d", *hp->sess->fd);
 }
 
 /* SECTION: client-server.spec.shutdown
@@ -1646,22 +1646,22 @@ cmd_http_shutdown(CMD_ARGS)
 	if (*av != NULL)
 		vtc_fatal(hp->vl, "Unknown http shutdown spec: %s\n", *av);
 
-	vtc_log(vl, 4, "Shutting down fd (%s): %d", str[how], hp->sess->fd);
-	i = shutdown(hp->sess->fd, how);
+	vtc_log(vl, 4, "Shutting down fd (%s): %d", str[how], *hp->sess->fd);
+	i = shutdown(*hp->sess->fd, how);
 	j = errno;
 	if (i < 0 && j == ENOTCONN && notconn) {
 		vtc_log(vl, 3,
 		    "Shutdown(%s) socket fd %d, (was already closed)",
-		    str[how], hp->sess->fd
+		    str[how], *hp->sess->fd
 		);
 	} else if (i < 0) {
 		vtc_log(vl, hp->fatal,
 		    "Shutdown(%s) socket fd %d, failed, %s",
-		    str[how], hp->sess->fd, strerror(j)
+		    str[how], *hp->sess->fd, strerror(j)
 		);
 	} else {
 		vtc_log(vl, 3, "Shutdown(%s) socket fd %d",
-		    str[how], hp->sess->fd
+		    str[how], *hp->sess->fd
 		);
 	}
 }
@@ -1898,8 +1898,8 @@ http_process_cleanup(void *arg)
 
 	CAST_OBJ_NOTNULL(hp, arg, HTTP_MAGIC);
 
-	if (vtc_error && hp->sess->fd >= 0)
-		VTCP_close(&hp->sess->fd);
+	if (vtc_error && *hp->sess->fd >= 0)
+		VTCP_close(hp->sess->fd);
 	if (hp->h2)
 		stop_h2(hp);
 	VSB_destroy(&hp->vsb);
@@ -1922,7 +1922,7 @@ http_fd_poll(const struct http *hp, short *events, vtim_real deadline)
 	int i;
 
 	CHECK_OBJ_NOTNULL(hp, HTTP_MAGIC);
-	pfd->fd = hp->sess->fd;
+	pfd->fd = *hp->sess->fd;
 	pfd->events = *events;
 	pfd->revents = 0;
 
@@ -1947,7 +1947,7 @@ http_fd_read(const struct http *hp, void *buf, size_t len)
 {
 	CHECK_OBJ_NOTNULL(hp, HTTP_MAGIC);
 	AZ(hp->tlsconn);
-	return (read(hp->sess->fd, buf, len));
+	return (read(*hp->sess->fd, buf, len));
 }
 
 static ssize_t
@@ -1955,7 +1955,7 @@ http_fd_write(const struct http *hp, const void *buf, size_t len)
 {
 	CHECK_OBJ_NOTNULL(hp, HTTP_MAGIC);
 	AZ(hp->tlsconn);
-	return (write(hp->sess->fd, buf, len));
+	return (write(*hp->sess->fd, buf, len));
 }
 
 static void
@@ -1963,7 +1963,7 @@ http_fd_close(struct http *hp)
 {
 	CHECK_OBJ_NOTNULL(hp, HTTP_MAGIC);
 	AZ(hp->tlsconn);
-	VTCP_close(&hp->sess->fd);
+	VTCP_close(hp->sess->fd);
 }
 
 static const struct sess_ops http_fd_so = {
@@ -1977,12 +1977,12 @@ static const struct sess_ops http_fd_so = {
  * HTTP process
  */
 
-int
+void
 http_process(struct vtclog *vl, struct vtc_sess *vsp, const char *spec,
-    int sock, int *sfd, const char *addr, int rcvbuf)
+    int *sock, int *sfd, const char *addr, int rcvbuf)
 {
 	struct http *hp;
-	int retval, oldbuf;
+	int oldbuf;
 	socklen_t intlen = sizeof(int);
 
 	(void)sfd;
@@ -1999,12 +1999,12 @@ http_process(struct vtclog *vl, struct vtc_sess *vsp, const char *spec,
 		hp->rcvbuf = rcvbuf;
 
 		oldbuf = 0;
-		AZ(getsockopt(hp->sess->fd, SOL_SOCKET, SO_RCVBUF, &oldbuf, &intlen));
-		AZ(setsockopt(hp->sess->fd, SOL_SOCKET, SO_RCVBUF, &rcvbuf, intlen));
-		AZ(getsockopt(hp->sess->fd, SOL_SOCKET, SO_RCVBUF, &rcvbuf, &intlen));
+		AZ(getsockopt(*hp->sess->fd, SOL_SOCKET, SO_RCVBUF, &oldbuf, &intlen));
+		AZ(setsockopt(*hp->sess->fd, SOL_SOCKET, SO_RCVBUF, &rcvbuf, intlen));
+		AZ(getsockopt(*hp->sess->fd, SOL_SOCKET, SO_RCVBUF, &rcvbuf, &intlen));
 
 		vtc_log(vl, 3, "-rcvbuf fd=%d old=%d new=%d actual=%d",
-		    hp->sess->fd, oldbuf, hp->rcvbuf, rcvbuf);
+		    *hp->sess->fd, oldbuf, hp->rcvbuf, rcvbuf);
 	}
 
 	hp->nrxbuf = 2048*1024;
@@ -2031,7 +2031,7 @@ http_process(struct vtclog *vl, struct vtc_sess *vsp, const char *spec,
 	hp->gzipresidual = -1;
 
 	if (*addr != '/') {
-		VTCP_hisname(sock, hp->rem_ip, VTCP_ADDRBUFSIZE, hp->rem_port,
+		VTCP_hisname(*sock, hp->rem_ip, VTCP_ADDRBUFSIZE, hp->rem_port,
 			     VTCP_PORTBUFSIZE);
 		hp->rem_path = NULL;
 	} else {
@@ -2049,8 +2049,6 @@ http_process(struct vtclog *vl, struct vtc_sess *vsp, const char *spec,
 	parse_string(vl, hp, spec);
 	pthread_cleanup_pop(0);
 	http_process_cleanup(hp);
-	retval = hp->sess->fd;
-	return (retval);
 }
 
 /**********************************************************************
