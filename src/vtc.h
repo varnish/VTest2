@@ -67,8 +67,8 @@ void init_tunnel(void);
 struct vtc_sess *Sess_New(struct vtclog *vl, const char *name);
 void Sess_Destroy(struct vtc_sess **spp);
 int Sess_GetOpt(struct vtc_sess *, char * const **);
-int sess_process(struct vtclog *vl, struct vtc_sess *,
-    const char *spec, int sock, int *sfd, const char *addr);
+void sess_process(struct vtclog *vl, struct vtc_sess *,
+    const char *spec, int *sock, int *sfd, const char *addr);
 
 typedef int sess_conn_f(void *priv, struct vtclog *);
 typedef void sess_disc_f(void *priv, struct vtclog *, int *fd);

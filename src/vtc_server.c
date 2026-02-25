@@ -319,7 +319,7 @@ server_dispatch_wrk(void *priv)
 	fd = s->fd;
 
 	vtc_log(vl, 3, "start with fd %d", fd);
-	fd = sess_process(vl, s->vsp, s->spec, fd, &s->sock, s->listen);
+	sess_process(vl, s->vsp, s->spec, &fd, &s->sock, s->listen);
 	vtc_log(vl, 3, "shutting fd %d (server dispatch)", fd);
 	j = shutdown(fd, SHUT_WR);
 	if (!VTCP_Check(j))

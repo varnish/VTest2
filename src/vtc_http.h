@@ -58,7 +58,7 @@ struct vtc_sess {
 	char			*name;
 	int			repeat;
 	int			keepalive;
-	int			fd;
+	int			*fd;
 
 	ssize_t			rcvbuf;
 };
@@ -120,6 +120,6 @@ struct http {
 	struct h2_window	h2_win_peer[1];
 };
 
-int http_process(struct vtclog *vl, struct vtc_sess *vsp, const char *spec,
-    int sock, int *sfd, const char *addr, int rcvbuf);
+void http_process(struct vtclog *vl, struct vtc_sess *vsp, const char *spec,
+    int *sock, int *sfd, const char *addr, int rcvbuf);
 
