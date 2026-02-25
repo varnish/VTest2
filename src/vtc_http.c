@@ -2047,9 +2047,9 @@ http_process(struct vtclog *vl, struct vtc_sess *vsp, const char *spec,
 	 */
 	pthread_cleanup_push(http_process_cleanup, hp);
 	parse_string(vl, hp, spec);
-	retval = hp->sess->fd;
 	pthread_cleanup_pop(0);
 	http_process_cleanup(hp);
+	retval = hp->sess->fd;
 	return (retval);
 }
 
