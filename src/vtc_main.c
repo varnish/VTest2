@@ -556,7 +556,7 @@ build_path(const char *topdir, const char *subdir,
 	DIR *dir;
 	struct dirent *de;
 	struct stat st;
-	const char *topsep = "", *sep = "";
+	const char *topsep = "";
 
 	if (*subdir != '\0')
 		topsep = "/";
@@ -571,10 +571,9 @@ build_path(const char *topdir, const char *subdir,
 			continue;
 		bprintf(buf, "%s%s%s/%s", topdir, topsep, subdir, de->d_name);
 		if (!stat(buf, &st) && S_ISDIR(st.st_mode)) {
-			VSB_cat(vsb, sep);
 			VSB_cat(vsb, buf);
 			VSB_cat(vsb, sfx);
-			sep = ":";
+			VSB_cat(vsb, ":");
 		}
 	}
 	AZ(closedir(dir));
@@ -616,11 +615,11 @@ i_mode(void)
 	 */
 	VSB_clear(vsb);
 	VSB_cat(vsb, "PATH=");
-	build_path(topbuild, "bin", "vinyl", "", vsb);
-	VSB_putc(vsb, ':');
+#ifdef VTEST_WITH_VTC_VARNISH
 	build_path(topbuild, "bin", "varnish", "", vsb);
+#endif
+
 #ifdef VTEST_WITH_VTC_VINYL
-	VSB_cat(vsb, ":");
 	build_path(topbuild, "bin", "vinyl", "", vsb);
 #endif
 

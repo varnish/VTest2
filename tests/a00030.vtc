@@ -1,0 +1,28 @@
+vtest "Basic VSM status check"
+
+feature vtest_cmd vinyl
+
+# just launch vinyld
+vinyl v1 -cliok ping
+vsm m1 -expect-status mgt-running
+
+vinyl v1 -vcl "backend be none;"
+vsm m1 -expect-status mgt-running
+
+vinyl v1 -start
+vsm m1 -expect-status \
+	mgt-running,mgt-changed,wrk-running,wrk-changed,wrk-restarted
+
+vinyl v1 -vcl "backend be none;"
+vsm m1 -expect-status mgt-running,wrk-running,wrk-changed
+
+# The order of status flags does not matter, the next one is equivalent.
+vinyl v1 -vcl "backend be none;"
+vsm m1 -expect-status wrk-changed,wrk-running,mgt-running
+
+vinyl v1 -stop
+vsm m1 -expect-status mgt-running,mgt-changed
+
+vinyl v1 -start
+vsm m1 -expect-status \
+	mgt-running,mgt-changed,wrk-running,wrk-changed,wrk-restarted
