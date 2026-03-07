@@ -619,6 +619,11 @@ i_mode(void)
 	build_path(topbuild, "bin", "vinyl", "", vsb);
 	VSB_putc(vsb, ':');
 	build_path(topbuild, "bin", "varnish", "", vsb);
+#ifdef VTEST_WITH_VTC_VINYL
+	VSB_cat(vsb, ":");
+	build_path(topbuild, "bin", "vinyl", "", vsb);
+#endif
+
 #ifdef WITH_CONTRIB
 	VSB_putc(vsb, ':');
 	build_path(topsrc, "", "contrib", "", vsb);
