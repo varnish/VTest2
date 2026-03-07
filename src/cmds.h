@@ -58,6 +58,9 @@ CMD_TOP(tunnel)
 #ifdef VTEST_WITH_VTC_VARNISH
 CMD_TOP(varnish)
 #endif
+#ifdef VTEST_WITH_VTC_VINYL
+CMD_TOP(vinyl)
+#endif
 CMD_TOP(varnishtest)
 #ifdef VTEST_WITH_VTC_VSM
 CMD_TOP(vsm)
