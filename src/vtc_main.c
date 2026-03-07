@@ -646,6 +646,7 @@ i_mode(void)
 #endif
 
 #ifdef VTEST_WITH_VTC_VINYL
+	VSB_cat(vsb, ":");
 	build_path(topbuild, "bin", "vinyl", "", vsb);
 #endif
 
