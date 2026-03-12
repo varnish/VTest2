@@ -494,10 +494,14 @@ abstract_uds_works(void)
  *        The <groupname> group is present
  * user_varnish
  *        The varnish user is present
+ * user_vinyl
+ *        The vinyl user is present
  * user_vcache
  *        The vcache user is present
  * group_varnish
  *        The varnish group is present
+ * group_vinyl
+ *        The vinyl group is present
  * cmd <command-line>
  *        A command line that should execute with a zero exit status
  * ignore_unknown_macro
@@ -641,9 +645,11 @@ cmd_feature(CMD_ARGS)
 		FEATURE("dns", dns_works());
 		FEATURE("topbuild", iflg);
 		FEATURE("root", !geteuid());
-		FEATURE("user_varnish", getpwnam("varnish") != NULL);
+		FEATURE("user_varnish", getpwnam("varnish") != NULL);	// XXX remove?
+		FEATURE("user_vinyl", getpwnam("vinyl") != NULL);
 		FEATURE("user_vcache", getpwnam("vcache") != NULL);
-		FEATURE("group_varnish", getgrnam("varnish") != NULL);
+		FEATURE("group_varnish", getgrnam("varnish") != NULL); // XXX remove?
+		FEATURE("group_vinyl", getgrnam("vinyl") != NULL);
 		FEATURE("persistent_storage", with_persistent_storage);
 		FEATURE("tls_client", 1);
 		FEATURE("tls_1_3", 1);
