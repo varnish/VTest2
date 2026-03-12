@@ -616,6 +616,8 @@ i_mode(void)
 	 */
 	VSB_clear(vsb);
 	VSB_cat(vsb, "PATH=");
+	build_path(topbuild, "bin", "vinyl", "", vsb);
+	VSB_putc(vsb, ':');
 	build_path(topbuild, "bin", "varnish", "", vsb);
 #ifdef WITH_CONTRIB
 	VSB_putc(vsb, ':');
