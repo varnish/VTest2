@@ -508,6 +508,12 @@ abstract_uds_works(void)
  *        recognized as a macro.
  * persistent_storage
  *        Varnish was built with the deprecated persistent storage.
+ * tls_client
+ *        Varnish was built with client-side TLS support
+ * tls_1_3
+ *        Varnish was built with TLSv1.3 support
+ * tls
+ *        Varnishtest was built with TLS support
  * coverage
  *        Varnish was built with code coverage enabled.
  * asan
@@ -631,6 +637,9 @@ cmd_feature(CMD_ARGS)
 		FEATURE("user_vcache", getpwnam("vcache") != NULL);
 		FEATURE("group_varnish", getgrnam("varnish") != NULL);
 		FEATURE("persistent_storage", with_persistent_storage);
+		FEATURE("tls_client", 1);
+		FEATURE("tls_1_3", 1);
+		FEATURE("tls", 1);
 		FEATURE("coverage", coverage);
 		FEATURE("asan", asan);
 		FEATURE("msan", msan);
