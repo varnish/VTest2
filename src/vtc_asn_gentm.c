@@ -142,10 +142,10 @@ int asn1_generalizedtime_to_tm(struct tm *tm, const ASN1_GENERALIZEDTIME *d)
 	char *a;
 	int n, i, l, o;
 
-	if (d->type != V_ASN1_GENERALIZEDTIME)
+	if (ASN1_STRING_type(d) != V_ASN1_GENERALIZEDTIME)
 		return (0);
-	l = d->length;
-	a = (char *)d->data;
+	l = ASN1_STRING_length(d);
+	a = (char *)ASN1_STRING_get0_data(d);
 	o = 0;
 	/*
 	 * GENERALIZEDTIME is similar to UTCTIME except the year is represented
