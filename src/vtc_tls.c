@@ -985,10 +985,10 @@ cert_resolve(SSL *s, unsigned long idx)
 }
 
 static char *
-get_CN(X509_NAME *n)
+get_CN(const X509_NAME *n)
 {
 	int i;
-	X509_NAME_ENTRY *x509_ne;
+	const X509_NAME_ENTRY *x509_ne;
 	char *p, *r;
 
 	if (!n)
