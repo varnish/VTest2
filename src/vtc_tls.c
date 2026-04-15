@@ -1139,9 +1139,6 @@ static const char *OCSP_RESP_STATUS = "tls.ocsp_resp_status";
 static const char *OCSP_VERIFY = "tls.ocsp_verify";
 static const char *OCSP_THIS_UPDATE = "tls.ocsp_this_update";
 
-int
-VTC_ASN1_TIME_to_tm(const ASN1_GENERALIZEDTIME *d, struct tm *tm);
-
 static const char *
 var_ocsp_status(const char *what, const struct http *hp,
     struct tlsctx *cfg, struct tlsconn *c)
@@ -1267,14 +1264,7 @@ var_ocsp_status(const char *what, const struct http *hp,
 		assert(what == OCSP_THIS_UPDATE);
 		vsb = VSB_new_auto();
 		AN(vsb);
-		VTC_ASN1_TIME_to_tm(asn_thisupd, &tm);
-		/*
-		 * Replace with OpenSSL's ASN1_TIME_to_tm once we get
-		 * rid of EL7.
-		 *
-		 * (git blame and revert the commit matching these
-		 * lines)
-		 */
+		ASN1_TIME_to_tm(asn_thisupd, &tm);
 		VSB_printf(vsb, "%d-%.02d-%.02dT%.02d:%.02d:%.02dZ",
 		    tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
 		    tm.tm_hour, tm.tm_min, tm.tm_sec);
