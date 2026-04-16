@@ -1587,7 +1587,7 @@ cmd_http_accept(CMD_ARGS)
 	assert(*hp->sfd >= 0);
 	if (hp->h2)
 		stop_h2(hp);
-	if (hp->sess->fd >= 0)
+	if (*hp->sess->fd >= 0)
 		hp->so->close(hp);
 	vtc_log(vl, 4, "Accepting");
 	*hp->sess->fd = accept(*hp->sfd, NULL, NULL);
