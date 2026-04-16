@@ -1509,7 +1509,7 @@ cmd_http_tls_config(CMD_ARGS)
 
 	AN(av[1]);
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
-	if (hp->tlsconf != NULL && hp->sess->fd >= 0)
+	if (hp->tlsconf != NULL && *hp->sess->fd >= 0)
 		vtc_fatal(vl, "Cannot reconfigure TLS with an ongoing session");
 	tls_ctx_free(&hp->tlsconf);
 	if (hp->sfd)
