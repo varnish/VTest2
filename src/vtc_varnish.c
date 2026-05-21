@@ -34,6 +34,7 @@
 
 #include <sys/socket.h>
 
+#include <errno.h>
 #include <fcntl.h>
 #include <fnmatch.h>
 #include <inttypes.h>
@@ -1036,8 +1037,9 @@ varnish_expect(struct varnish *v, char * const *av)
 	} else {
 		ARGN(vl, av, 1);
 		ARGN(vl, av, 2);
+		errno = 0;
 		u = strtoumax(av[2], &p, 0);
-		if (u != UINTMAX_MAX && *p == '\0')
+		if (errno != ERANGE && *p == '\0')
 			sp.rhs.val = u;
 		else
 			sp.rhs.pattern = av[2];
