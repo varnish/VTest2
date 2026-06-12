@@ -1031,6 +1031,7 @@ get_subject_alt_names(struct tlsconn *c, X509 *x, struct vtclog *vl)
 {
 	int i;
 	unsigned char *p;
+	const unsigned char *q;
 	const char *sep = "";
 	char b[INET6_ADDRSTRLEN];
 
@@ -1060,11 +1061,11 @@ get_subject_alt_names(struct tlsconn *c, X509 *x, struct vtclog *vl)
 
 			break;
 		case GEN_IPADD:
-			p = ASN1_STRING_get0_data(n->d.ip);
-			AN(p);
+			q = ASN1_STRING_get0_data(n->d.ip);
+			AN(q);
 
 			if (inet_ntop(ASN1_STRING_length(n->d.ip) == 16 ? AF_INET6 : AF_INET,
-			    p, b, INET6_ADDRSTRLEN) == 0)
+			    q, b, INET6_ADDRSTRLEN) == 0)
 				continue;
 
 			VSB_cat(c->subject_alt_names, sep);
