@@ -616,7 +616,9 @@ i_mode(void)
 	VSB_clear(vsb);
 	VSB_cat(vsb, "PATH=");
 #ifdef VTEST_WITH_VTC_VARNISH
+	/* varnish build trees may carry vinyl-named directories */
 	build_path(topbuild, "bin", "varnish", "", vsb);
+	build_path(topbuild, "bin", "vinyl", "", vsb);
 #endif
 
 #ifdef VTEST_WITH_VTC_VINYL
