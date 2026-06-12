@@ -180,27 +180,3 @@ client c3 -connect ${s3_sock} {
 	expect tls.failed == false
 	expect tls.ocsp_this_update ~ 2024
 } -run
-
-
-shell {cat > ${tmpdir}/f3 << 'EOF'
-	This is not a DER encoded OCSP response.
-EOF
-}
-
-server s4 {
-	tls_config {
-		staple = ${tmpdir}/f3
-	}
-	tls_handshake
-	expect tls.failed == false
-	expect tls.staple_requested == true
-} -start
-
-client c4 -connect ${s4_sock} {
-	tls_config {
-		cert_status = true
-	}
-	tls_handshake
-	expect tls.ocsp_resp_status == malformed
-	expect tls.failed == false
-} -run

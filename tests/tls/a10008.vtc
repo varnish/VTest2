@@ -1,0 +1,33 @@
+varnishtest "tls: malformed OCSP staple"
+
+# OpenSSL 3.6 reworked OCSP stapling for TLS 1.3 multi-stapling.
+# SSL_set_tlsext_status_ocsp_resp() now parses the response and the
+# handshake only sends responses that parsed, so a non-DER staple is
+# silently dropped (and an OpenSSL >= 3.6 client aborts the handshake
+# upon receiving one). This scenario can only be exercised with older
+# libraries.
+
+feature tls tls_raw_staple
+
+shell {cat > ${tmpdir}/f1 << 'EOF'
+	This is not a DER encoded OCSP response.
+EOF
+}
+
+server s1 {
+	tls_config {
+		staple = ${tmpdir}/f1
+	}
+	tls_handshake
+	expect tls.failed == false
+	expect tls.staple_requested == true
+} -start
+
+client c1 -connect ${s1_sock} {
+	tls_config {
+		cert_status = true
+	}
+	tls_handshake
+	expect tls.ocsp_resp_status == malformed
+	expect tls.failed == false
+} -run

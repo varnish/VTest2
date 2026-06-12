@@ -514,6 +514,9 @@ abstract_uds_works(void)
  *        Varnish was built with TLSv1.3 support
  * tls
  *        Varnishtest was built with TLS support
+ * tls_raw_staple
+ *        The TLS library staples OCSP responses verbatim, allowing
+ *        tests to staple arbitrary data (OpenSSL < 3.6)
  * coverage
  *        Varnish was built with code coverage enabled.
  * asan
@@ -653,6 +656,11 @@ cmd_feature(CMD_ARGS)
 		FEATURE("tls_1_3", 1);
 #else
 		FEATURE("tls_1_3", 0);
+#endif
+#if OPENSSL_VERSION_NUMBER < 0x30600000L
+		FEATURE("tls_raw_staple", 1);
+#else
+		FEATURE("tls_raw_staple", 0);
 #endif
 
 		if (!strcmp(feat, "user")) {
