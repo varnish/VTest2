@@ -211,8 +211,8 @@ cmd_haproxy_cli_send(CMD_ARGS)
 	(void)vl;
 	CAST_OBJ_NOTNULL(hc, priv, HAPROXY_CLI_MAGIC);
 	AZ(strcmp(av[0], "send"));
-	AN(av[1]);
-	AZ(av[2]);
+	ARGN(vl, av, 1);
+	ARGZ(vl, av, 2);
 
 	vsb = VSB_new_auto();
 	AN(vsb);
@@ -318,7 +318,7 @@ cmd_haproxy_cli_expect(CMD_ARGS)
 	spec = av[1];
 	AN(cmp);
 	AN(spec);
-	AZ(av[2]);
+	ARGZ(vl, av, 2);
 
 	assert(!strcmp(cmp, "~") || !strcmp(cmp, "!~"));
 
@@ -1220,7 +1220,7 @@ cmd_haproxy(CMD_ARGS)
 			break;
 
 		if (!strcmp(*av, "-conf-OK")) {
-			AN(av[1]);
+			ARGN(vl, av, 1);
 			haproxy_store_conf(h, av[1], 0);
 			h->expect_exit = 0;
 			haproxy_check_conf(h, "");
@@ -1228,8 +1228,8 @@ cmd_haproxy(CMD_ARGS)
 			continue;
 		}
 		if (!strcmp(*av, "-conf-BAD")) {
-			AN(av[1]);
-			AN(av[2]);
+			ARGN(vl, av, 1);
+			ARGN(vl, av, 2);
 			haproxy_store_conf(h, av[2], 0);
 			h->expect_exit = 1;
 			haproxy_check_conf(h, av[1]);
@@ -1254,7 +1254,7 @@ cmd_haproxy(CMD_ARGS)
 			continue;
 		}
 		if (!strcmp(*av, "-arg")) {
-			AN(av[1]);
+			ARGN(vl, av, 1);
 			AZ(h->pid);
 			VSB_cat(h->args, " ");
 			VSB_cat(h->args, av[1]);
@@ -1279,13 +1279,13 @@ cmd_haproxy(CMD_ARGS)
 		}
 
 		if (!strcmp(*av, "-conf")) {
-			AN(av[1]);
+			ARGN(vl, av, 1);
 			haproxy_store_conf(h, av[1], 0);
 			av++;
 			continue;
 		}
 		if (!strcmp(*av, "-conf+backend")) {
-			AN(av[1]);
+			ARGN(vl, av, 1);
 			haproxy_store_conf(h, av[1], 1);
 			av++;
 			continue;

@@ -1279,8 +1279,8 @@ cmd_sendhex(CMD_ARGS)
 	(void)vl;
 	CAST_OBJ_NOTNULL(s, priv, STREAM_MAGIC);
 	CAST_OBJ_NOTNULL(hp, s->hp, HTTP_MAGIC);
-	AN(av[1]);
-	AZ(av[2]);
+	ARGN(vl, av, 1);
+	ARGZ(vl, av, 2);
 	vsb = vtc_hex_to_bin(hp->vl, av[1]);
 	assert(VSB_len(vsb) >= 0);
 	vtc_hexdump(hp->vl, 4, "sendhex", VSB_data(vsb), VSB_len(vsb));
@@ -2106,8 +2106,8 @@ cmd_txwinup(CMD_ARGS)
 	CAST_OBJ_NOTNULL(hp, s->hp, HTTP_MAGIC);
 	memset(buf, 0, 8);
 
-	AN(av[1]);
-	AN(av[2]);
+	ARGN(vl, av, 1);
+	ARGN(vl, av, 2);
 
 	INIT_FRAME(f, WINDOW_UPDATE, 4, s->id, 0);
 	f.data = buf;
@@ -2547,12 +2547,12 @@ cmd_expect(CMD_ARGS)
 	CHECK_OBJ_NOTNULL(hp, HTTP_MAGIC);
 
 	AZ(strcmp(av[0], "expect"));
-	av++;
+	ARGN(vl, av, 1);
+	ARGN(vl, av, 2);
+	ARGN(vl, av, 3);
+	ARGZ(vl, av, 4);
 
-	AN(av[0]);
-	AN(av[1]);
-	AN(av[2]);
-	AZ(av[3]);
+	av++;
 	PTOK(pthread_mutex_lock(&hp->mtx));
 	lhs = cmd_var_resolve(s, av[0], buf);
 	cmp = av[1];
@@ -2594,8 +2594,8 @@ cmd_write_body(CMD_ARGS)
 	(void)vl;
 	CAST_OBJ_NOTNULL(s, priv, STREAM_MAGIC);
 	AN(av[0]);
-	AN(av[1]);
-	AZ(av[2]);
+	ARGN(vl, av, 1);
+	ARGZ(vl, av, 2);
 	AZ(strcmp(av[0], "write_body"));
 	if (VFIL_writefile(NULL, av[1], s->body, s->bodylen) != 0)
 		vtc_fatal(s->vl, "failed to write body: %s (%d)",

@@ -41,6 +41,22 @@ struct vtclog;
 			    chr, nm);					\
 	} while (0)
 
+#define ARGZ(vl, av, n)							\
+	do {								\
+		if ((av)[n] != NULL)					\
+			vtc_fatal(vl, "Unexpected argument: %s",	\
+			    (av)[n]);					\
+	} while (0)
+
+#define ARGN(vl, av, n)							\
+	do {								\
+		AN(n);							\
+		if ((av)[n] == NULL)					\
+			vtc_fatal(vl,					\
+			    "Missing argument after: %s",		\
+			    (av)[(n) - 1]);				\
+	} while (0)
+
 #define	CMD_ARGS char * const *av, void *priv, struct vtclog *vl
 #define	CMDS_F_NONE		0x0
 #define	CMDS_F_GLOBAL		0x1
