@@ -372,15 +372,14 @@ cmd_http_expect(CMD_ARGS)
 	char *cmp;
 	const char *rhs;
 
-	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
 	AZ(strcmp(av[0], "expect"));
 	av++;
 
 	AN(av[0]);
-	AN(av[1]);
-	AN(av[2]);
-	AZ(av[3]);
+	ARGN(vl, av, 1);
+	ARGN(vl, av, 2);
+	ARGZ(vl, av, 3);
 	lhs = cmd_var_resolve(hp, av[0]);
 	cmp = av[1];
 	rhs = cmd_var_resolve(hp, av[2]);
@@ -405,8 +404,8 @@ cmd_http_expect_pattern(CMD_ARGS)
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
 	AZ(strcmp(av[0], "expect_pattern"));
+	ARGZ(vl, av, 1);
 	av++;
-	AZ(av[0]);
 	for (p = hp->body; *p != '\0'; p++) {
 		if (*p != t)
 			vtc_fatal(hp->vl,
@@ -1304,8 +1303,8 @@ cmd_http_recv(CMD_ARGS)
 
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
-	AN(av[1]);
-	AZ(av[2]);
+	ARGN(vl, av, 1);
+	ARGZ(vl, av, 2);
 	n = strtoul(av[1], NULL, 0);
 	while (n > 0) {
 		i = hp->so->read(hp, u, n > 32 ? 32 : n);
@@ -1332,8 +1331,8 @@ cmd_http_send(CMD_ARGS)
 
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
-	AN(av[1]);
-	AZ(av[2]);
+	ARGN(vl, av, 1);
+	ARGZ(vl, av, 2);
 	vtc_dump(hp->vl, 4, "send", av[1], -1);
 	i = hp->so->write(hp, av[1], strlen(av[1]));
 	if (i != strlen(av[1]))
@@ -1355,9 +1354,9 @@ cmd_http_send_n(CMD_ARGS)
 
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
-	AN(av[1]);
-	AN(av[2]);
-	AZ(av[3]);
+	ARGN(vl, av, 1);
+	ARGN(vl, av, 2);
+	ARGZ(vl, av, 3);
 	n = strtoul(av[1], NULL, 0);
 		vtc_dump(hp->vl, 4, "send_n", av[2], -1);
 	l = strlen(av[2]);
@@ -1384,8 +1383,8 @@ cmd_http_send_urgent(CMD_ARGS)
 
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
-	AN(av[1]);
-	AZ(av[2]);
+	ARGN(vl, av, 1);
+	ARGZ(vl, av, 2);
 	vtc_dump(hp->vl, 4, "send_urgent", av[1], -1);
 	i = send(*hp->sess->fd, av[1], strlen(av[1]), MSG_OOB);
 	if (i != strlen(av[1]))
@@ -1409,8 +1408,8 @@ cmd_http_sendhex(CMD_ARGS)
 
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
-	AN(av[1]);
-	AZ(av[2]);
+	ARGN(vl, av, 1);
+	ARGZ(vl, av, 2);
 	vsb = vtc_hex_to_bin(hp->vl, av[1]);
 	assert(VSB_len(vsb) >= 0);
 	vtc_hexdump(hp->vl, 4, "sendhex", VSB_data(vsb), VSB_len(vsb));
@@ -1433,8 +1432,8 @@ cmd_http_chunked(CMD_ARGS)
 
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
-	AN(av[1]);
-	AZ(av[2]);
+	ARGN(vl, av, 1);
+	ARGZ(vl, av, 2);
 	VSB_clear(hp->vsb);
 	VSB_printf(hp->vsb, "%jx%s%s%s",
 	    (uintmax_t)strlen(av[1]), nl, av[1], nl);
@@ -1458,8 +1457,8 @@ cmd_http_chunkedlen(CMD_ARGS)
 
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
-	AN(av[1]);
-	AZ(av[2]);
+	ARGN(vl, av, 1);
+	ARGZ(vl, av, 2);
 	VSB_clear(hp->vsb);
 
 	len = atoi(av[1]);
@@ -1495,8 +1494,8 @@ cmd_http_timeout(CMD_ARGS)
 
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
-	AN(av[1]);
-	AZ(av[2]);
+	ARGN(vl, av, 1);
+	ARGZ(vl, av, 2);
 	d = VNUM(av[1]);
 	if (isnan(d))
 		vtc_fatal(vl, "timeout is not a number (%s)", av[1]);
@@ -1518,7 +1517,7 @@ cmd_http_expect_close(CMD_ARGS)
 
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
-	AZ(av[1]);
+	ARGZ(vl, av, 1);
 
 	vtc_log(vl, 4, "Expecting close (fd = %d)", *hp->sess->fd);
 	if (hp->h2)
@@ -1559,7 +1558,7 @@ cmd_http_close(CMD_ARGS)
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
 	ONLY_SERVER(hp, av);
-	AZ(av[1]);
+	ARGZ(vl, av, 1);
 	assert(hp->sfd != NULL);
 	assert(*hp->sfd >= 0);
 	if (hp->h2)
@@ -1582,7 +1581,7 @@ cmd_http_accept(CMD_ARGS)
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
 	ONLY_SERVER(hp, av);
-	AZ(av[1]);
+	ARGZ(vl, av, 1);
 	assert(hp->sfd != NULL);
 	assert(*hp->sfd >= 0);
 	if (hp->h2)
@@ -1679,7 +1678,7 @@ cmd_http_fatal(CMD_ARGS)
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
 
 	(void)vl;
-	AZ(av[1]);
+	ARGZ(vl, av, 1);
 	if (!strcmp(av[0], "fatal")) {
 		hp->fatal = 0;
 	} else {
@@ -1822,8 +1821,8 @@ cmd_http_write_body(CMD_ARGS)
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
 	AN(av[0]);
-	AN(av[1]);
-	AZ(av[2]);
+	ARGN(vl, av, 1);
+	ARGZ(vl, av, 2);
 	AZ(strcmp(av[0], "write_body"));
 	if (VFIL_writefile(NULL, av[1], hp->body, hp->bodyl) != 0)
 		vtc_fatal(hp->vl, "failed to write body: %s (%d)",

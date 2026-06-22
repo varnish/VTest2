@@ -1032,10 +1032,10 @@ varnish_expect(struct varnish *v, char * const *av)
 	not = (*l == '!');
 	if (not) {
 		l++;
-		AZ(av[1]);
+		ARGZ(vl, av, 1);
 	} else {
-		AN(av[1]);
-		AN(av[2]);
+		ARGN(vl, av, 1);
+		ARGN(vl, av, 2);
 		u = strtoumax(av[2], &p, 0);
 		if (u != UINTMAX_MAX && *p == '\0')
 			sp.rhs.val = u;
@@ -1265,7 +1265,7 @@ cmd_varnish(CMD_ARGS)
 		if (vtc_error)
 			break;
 		if (!strcmp(*av, "-arg")) {
-			AN(av[1]);
+			ARGN(vl, av, 1);
 			AZ(v->pid);
 			VSB_cat(v->args, " ");
 			VSB_cat(v->args, av[1]);
@@ -1275,19 +1275,19 @@ cmd_varnish(CMD_ARGS)
 			continue;
 		}
 		if (!strcmp(*av, "-cleanup")) {
-			AZ(av[1]);
+			ARGZ(vl, av, 1);
 			varnish_cleanup(v);
 			continue;
 		}
 		if (!strcmp(*av, "-cli")) {
-			AN(av[1]);
+			ARGN(vl, av, 1);
 			varnish_cli(v, av[1], 0, NULL, 0);
 			av++;
 			continue;
 		}
 		if (!strcmp(*av, "-clierr")) {
-			AN(av[1]);
-			AN(av[2]);
+			ARGN(vl, av, 1);
+			ARGN(vl, av, 2);
 			varnish_cli(v, av[2], atoi(av[1]), NULL, 0);
 			av += 2;
 			continue;
@@ -1295,33 +1295,33 @@ cmd_varnish(CMD_ARGS)
 		if (!strcmp(*av, "-cliexpect")) {
 			int neg = 0;
 
-			AN(av[1]);
-			AN(av[2]);
+			ARGN(vl, av, 1);
+			ARGN(vl, av, 2);
 			if (*av[1] == '!') {
 				neg = 1;
 				av++;
-				AN(av[2]);
+				ARGN(vl, av, 2);
 			}
 			varnish_cli(v, av[2], 0, av[1], neg);
 			av += 2;
 			continue;
 		}
 		if (!strcmp(*av, "-clijson")) {
-			AN(av[1]);
+			ARGN(vl, av, 1);
 			varnish_cli_json(v, av[1]);
 			av++;
 			continue;
 		}
 		if (!strcmp(*av, "-cliok")) {
-			AN(av[1]);
+			ARGN(vl, av, 1);
 			varnish_cli(v, av[1], (unsigned)CLIS_OK, NULL, 0);
 			av++;
 			continue;
 		}
 		if (!strcmp(*av, "-errvcl")) {
 			char *r = NULL;
-			AN(av[1]);
-			AN(av[2]);
+			ARGN(vl, av, 1);
+			ARGN(vl, av, 2);
 			varnish_vcl(v, av[2], 1, &r);
 			if (strstr(r, av[1]) == NULL)
 				varnish_fatal(v,
@@ -1347,14 +1347,14 @@ cmd_varnish(CMD_ARGS)
 			continue;
 		}
 		if (!strcmp(*av, "-jail")) {
-			AN(av[1]);
+			ARGN(vl, av, 1);
 			AZ(v->pid);
 			REPLACE(v->jail, av[1]);
 			av++;
 			continue;
 		}
 		if (!strcmp(*av, "-proto")) {
-			AN(av[1]);
+			ARGN(vl, av, 1);
 			AZ(v->pid);
 			REPLACE(v->proto, av[1]);
 			av++;
@@ -1369,25 +1369,25 @@ cmd_varnish(CMD_ARGS)
 			continue;
 		}
 		if (!strcmp(*av, "-syntax")) {
-			AN(av[1]);
+			ARGN(vl, av, 1);
 			v->syntax = strtod(av[1], NULL);
 			av++;
 			continue;
 		}
 		if (!strcmp(*av, "-vcl")) {
-			AN(av[1]);
+			ARGN(vl, av, 1);
 			varnish_vcl(v, av[1], 0, NULL);
 			av++;
 			continue;
 		}
 		if (!strcmp(*av, "-vcl+backend")) {
-			AN(av[1]);
+			ARGN(vl, av, 1);
 			varnish_vclbackend(v, av[1]);
 			av++;
 			continue;
 		}
 		if (!strcmp(*av, "-vsc")) {
-			AN(av[1]);
+			ARGN(vl, av, 1);
 			varnish_vsc(v, av[1]);
 			av++;
 			continue;

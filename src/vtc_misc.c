@@ -75,14 +75,13 @@ cmd_vtest(CMD_ARGS)
 {
 
 	(void)priv;
-	(void)vl;
-
 	if (av == NULL)
 		return;
 	AZ(strcmp(av[0], "vtest"));
 
+	ARGN(vl, av, 1);
 	vtc_log(vl, 1, "VTEST %s", av[1]);
-	AZ(av[2]);
+	ARGZ(vl, av, 2);
 }
 
 /* SECTION: varnishtest varnishtest
@@ -96,14 +95,13 @@ cmd_varnishtest(CMD_ARGS)
 {
 
 	(void)priv;
-	(void)vl;
-
 	if (av == NULL)
 		return;
 	AZ(strcmp(av[0], "varnishtest"));
 
+	ARGN(vl, av, 1);
 	vtc_log(vl, 1, "VTEST %s", av[1]);
-	AZ(av[2]);
+	ARGZ(vl, av, 2);
 }
 
 /* SECTION: shell shell
@@ -249,7 +247,7 @@ cmd_shell(CMD_ARGS)
 			break;
 		}
 	}
-	AN(av[n]);
+	ARGN(vl, av, n);
 	cmd_shell_engine(vl, ok, av[n], expect, re);
 }
 
@@ -312,17 +310,16 @@ cmd_setenv(CMD_ARGS)
 
 	if (av == NULL)
 		return;
-	AN(av[1]);
-	AN(av[2]);
+	ARGN(vl, av, 1);
+	ARGN(vl, av, 2);
 
 	force = 1;
 	if (strcmp("-ifunset", av[1]) == 0) {
 		force = 0;
 		av++;
-		AN(av[2]);
+		ARGN(vl, av, 2);
 	}
-	if (av[3] != NULL)
-		vtc_fatal(vl, "CMD setenv: Unexpected argument '%s'", av[3]);
+	ARGZ(vl, av, 3);
 	r = setenv(av[1], av[2], force);
 	if (r != 0)
 		vtc_log(vl, 0, "CMD setenv %s=\"%s\" failed: %s",
@@ -344,8 +341,8 @@ cmd_delay(CMD_ARGS)
 	(void)priv;
 	if (av == NULL)
 		return;
-	AN(av[1]);
-	AZ(av[2]);
+	ARGN(vl, av, 1);
+	ARGZ(vl, av, 2);
 	f = VNUM(av[1]);
 	if (isnan(f))
 		vtc_fatal(vl, "Syntax error in number (%s)", av[1]);

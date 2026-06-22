@@ -187,9 +187,9 @@ cmd_tls_cfg_cert(CMD_ARGS)
 
 	CAST_OBJ_NOTNULL(cfg, priv, TLSCTX_MAGIC);
 	AN(av[0]);
-	AN(av[1]);
-	AN(av[2]);
-	AZ(av[3]);
+	ARGN(vl, av, 1);
+	ARGN(vl, av, 2);
+	ARGZ(vl, av, 3);
 
 	AZ(strcmp(av[0], "cert"));
 	AZ(strcmp(av[1], "="));
@@ -230,15 +230,15 @@ cmd_tls_cfg_version(CMD_ARGS)
 
 	CAST_OBJ_NOTNULL(cfg, priv, TLSCTX_MAGIC);
 	AN(av[0]);
-	AN(av[1]);
-	AN(av[2]);
+	ARGN(vl, av, 1);
+	ARGN(vl, av, 2);
 
 	AZ(strcmp(av[0], "version"));
 	AZ(strcmp(av[1], "="));
 	proto_min = string2version(vl, av[2]);
 	proto_max = proto_min;
 	if (av[3] != NULL) {
-		AZ(av[4]);
+		ARGZ(vl, av, 4);
 		proto_max = string2version(vl, av[3]);
 	}
 
@@ -300,8 +300,8 @@ cmd_tls_cfg_alpn(CMD_ARGS)
 
 	CAST_OBJ_NOTNULL(cfg, priv, TLSCTX_MAGIC);
 	AN(av[0]);
-	AN(av[1]);
-	AN(av[2]);
+	ARGN(vl, av, 1);
+	ARGN(vl, av, 2);
 
 	AZ(strcmp(av[0], "alpn"));
 	AZ(strcmp(av[1], "="));
@@ -350,9 +350,9 @@ cmd_tls_cfg_cipher_list(CMD_ARGS)
 
 	CAST_OBJ_NOTNULL(cfg, priv, TLSCTX_MAGIC);
 	AN(av[0]);
-	AN(av[1]);
-	AN(av[2]);
-	AZ(av[3]);
+	ARGN(vl, av, 1);
+	ARGN(vl, av, 2);
+	ARGZ(vl, av, 3);
 
 	AZ(strcmp(av[0], "cipher_list"));
 	AZ(strcmp(av[1], "="));
@@ -392,9 +392,9 @@ cmd_tls_cfg_ciphersuites(CMD_ARGS)
 
 	CAST_OBJ_NOTNULL(cfg, priv, TLSCTX_MAGIC);
 	AN(av[0]);
-	AN(av[1]);
-	AN(av[2]);
-	AZ(av[3]);
+	ARGN(vl, av, 1);
+	ARGN(vl, av, 2);
+	ARGZ(vl, av, 3);
 
 	AZ(strcmp(av[0], "ciphersuites"));
 	AZ(strcmp(av[1], "="));
@@ -422,9 +422,9 @@ cmd_tls_cfg_servername(CMD_ARGS)
 	CAST_OBJ_NOTNULL(cfg, priv, TLSCTX_MAGIC);
 	assert(cfg->type == TLS_CLIENT);
 	AN(av[0]);
-	AN(av[1]);
-	AN(av[2]);
-	AZ(av[3]);
+	ARGN(vl, av, 1);
+	ARGN(vl, av, 2);
+	ARGZ(vl, av, 3);
 
 
 	AZ(strcmp(av[0], "servername"));
@@ -452,9 +452,9 @@ cmd_tls_cfg_verify_peer(CMD_ARGS)
 	CAST_OBJ_NOTNULL(cfg, priv, TLSCTX_MAGIC);
 	assert(cfg->type == TLS_CLIENT);
 	AN(av[0]);
-	AN(av[1]);
-	AN(av[2]);
-	AZ(av[3]);
+	ARGN(vl, av, 1);
+	ARGN(vl, av, 2);
+	ARGZ(vl, av, 3);
 
 	AZ(strcmp(av[0], "verify_peer"));
 	AZ(strcmp(av[1], "="));
@@ -501,8 +501,8 @@ cmd_tls_cfg_sess_out(CMD_ARGS)
 	CAST_OBJ_NOTNULL(cfg, priv, TLSCTX_MAGIC);
 	assert(cfg->type == TLS_CLIENT);
 	AN(av[0]);
-	AN(av[1]);
-	AN(av[2]);
+	ARGN(vl, av, 1);
+	ARGN(vl, av, 2);
 
 	AZ(strcmp(av[0], "sess_out"));
 	AZ(strcmp(av[1], "="));
@@ -534,8 +534,8 @@ cmd_tls_cfg_sess_in(CMD_ARGS)
 	CAST_OBJ_NOTNULL(cfg, priv, TLSCTX_MAGIC);
 	assert(cfg->type == TLS_CLIENT);
 	AN(av[0]);
-	AN(av[1]);
-	AN(av[2]);
+	ARGN(vl, av, 1);
+	ARGN(vl, av, 2);
 
 	AZ(strcmp(av[0], "sess_in"));
 	AZ(strcmp(av[1], "="));
@@ -583,8 +583,8 @@ cmd_tls_cfg_cert_status(CMD_ARGS)
 	CAST_OBJ_NOTNULL(cfg, priv, TLSCTX_MAGIC);
 	assert(cfg->type == TLS_CLIENT);
 	AN(av[0]);
-	AN(av[1]);
-	AN(av[2]);
+	ARGN(vl, av, 1);
+	ARGN(vl, av, 2);
 
 	AZ(strcmp(av[0], "cert_status"));
 	AZ(strcmp(av[1], "="));
@@ -627,9 +627,9 @@ cmd_tls_cfg_client_vfy(CMD_ARGS)
 	CAST_OBJ_NOTNULL(cfg, priv, TLSCTX_MAGIC);
 	assert(cfg->type == TLS_SERVER);
 	AN(av[0]);
-	AN(av[1]);
-	AN(av[2]);
-	AZ(av[3]);
+	ARGN(vl, av, 1);
+	ARGN(vl, av, 2);
+	ARGZ(vl, av, 3);
 
 	AZ(strcmp(av[0], "client_vfy"));
 	AZ(strcmp(av[1], "="));
@@ -680,9 +680,9 @@ cmd_tls_cfg_client_vfy_ca(CMD_ARGS)
 	CAST_OBJ_NOTNULL(cfg, priv, TLSCTX_MAGIC);
 	assert(cfg->type == TLS_SERVER);
 	AN(av[0]);
-	AN(av[1]);
-	AN(av[2]);
-	AZ(av[3]);
+	ARGN(vl, av, 1);
+	ARGN(vl, av, 2);
+	ARGZ(vl, av, 3);
 
 	AZ(strcmp(av[0], "client_vfy_ca"));
 	AZ(strcmp(av[1], "="));
@@ -745,8 +745,8 @@ cmd_tls_cfg_staple(CMD_ARGS)
 	CAST_OBJ_NOTNULL(cfg, priv, TLSCTX_MAGIC);
 
 	AN(av[0]);
-	AN(av[1]);
-	AN(av[2]);
+	ARGN(vl, av, 1);
+	ARGN(vl, av, 2);
 
 	AZ(strcmp(av[0], "staple"));
 	AZ(strcmp(av[1], "="));
@@ -1498,7 +1498,7 @@ cmd_http_tls_config(CMD_ARGS)
 	struct http *hp;
 
 
-	AN(av[1]);
+	ARGN(vl, av, 1);
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
 	if (hp->tlsconf != NULL && *hp->sess->fd >= 0)
 		vtc_fatal(vl, "Cannot reconfigure TLS with an ongoing session");

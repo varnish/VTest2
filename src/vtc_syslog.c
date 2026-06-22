@@ -263,7 +263,7 @@ cmd_syslog_expect(CMD_ARGS)
 	spec = av[1];
 	AN(cmp);
 	AN(spec);
-	AZ(av[2]);
+	ARGZ(vl, av, 2);
 
 	assert(!strcmp(cmp, "~") || !strcmp(cmp, "!~"));
 
@@ -487,20 +487,20 @@ cmd_syslog(CMD_ARGS)
 
 		AZ(s->run);
 		if (!strcmp(*av, "-repeat")) {
-			AN(av[1]);
+			ARGN(vl, av, 1);
 			s->repeat = atoi(av[1]);
 			av++;
 			continue;
 		}
 		if (!strcmp(*av, "-bind")) {
-			AN(av[1]);
+			ARGN(vl, av, 1);
 			bprintf(s->bind, "%s", av[1]);
 			av++;
 			syslog_bind(s);
 			continue;
 		}
 		if (!strcmp(*av, "-level")) {
-			AN(av[1]);
+			ARGN(vl, av, 1);
 			s->lvl = get_syslog_level(vl, av[1]);
 			av++;
 			continue;

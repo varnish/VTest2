@@ -1156,24 +1156,24 @@ cmd_process(CMD_ARGS)
 			continue;
 		}
 		if (!strcmp(*av, "-expect-text")) {
-			AN(av[1]);
-			AN(av[2]);
-			AN(av[3]);
+			ARGN(vl, av, 1);
+			ARGN(vl, av, 2);
+			ARGN(vl, av, 3);
 			term_expect_text(p, av[1], av[2], av[3]);
 			av += 3;
 			continue;
 		}
 		if (!strcmp(*av, "-expect-cursor")) {
-			AN(av[1]);
-			AN(av[2]);
+			ARGN(vl, av, 1);
+			ARGN(vl, av, 2);
 			term_expect_cursor(p, av[1], av[2]);
 			av += 2;
 			continue;
 		}
 		if (!strcmp(*av, "-match-text")) {
-			AN(av[1]);
-			AN(av[2]);
-			AN(av[3]);
+			ARGN(vl, av, 1);
+			ARGN(vl, av, 2);
+			ARGN(vl, av, 3);
 			term_match_text(p, av[1], av[2], av[3]);
 			av += 3;
 			continue;

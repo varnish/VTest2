@@ -182,7 +182,7 @@ cmd_tunnel_pause(CMD_ARGS)
 	struct tunnel *t;
 
 	CAST_OBJ_NOTNULL(t, priv, TUNNEL_MAGIC);
-	AZ(av[1]);
+	ARGZ(vl, av, 1);
 
 	if (!tunnel_is_open(t))
 		vtc_fatal(vl, "Tunnel already closed");
@@ -216,8 +216,8 @@ cmd_tunnel_send(CMD_ARGS)
 	unsigned len;
 
 	CAST_OBJ_NOTNULL(t, priv, TUNNEL_MAGIC);
-	AN(av[1]);
-	AZ(av[2]);
+	ARGN(vl, av, 1);
+	ARGZ(vl, av, 2);
 
 	len = atoi(av[1]);
 
@@ -273,7 +273,7 @@ cmd_tunnel_resume(CMD_ARGS)
 	struct tunnel *t;
 
 	CAST_OBJ_NOTNULL(t, priv, TUNNEL_MAGIC);
-	AZ(av[1]);
+	ARGZ(vl, av, 1);
 
 	if (!tunnel_is_open(t))
 		vtc_fatal(vl, "Tunnel already closed");
