@@ -772,6 +772,10 @@ process_start(struct process *p)
 		AZ(unsetenv("TERMCAP"));
 		// Not using NULL because GCC is now even more demented...
 		assert(write(STDERR_FILENO, "+", 1) == 1);
+
+		// Make sure the child will not ignore the -close signal.
+		signal(SIGHUP, SIG_DFL);
+
 		AZ(execl("/bin/sh", "/bin/sh", "-c", VSB_data(cl), (char*)0));
 		exit(1);
 	}
