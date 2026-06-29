@@ -405,7 +405,6 @@ cmd_http_expect_pattern(CMD_ARGS)
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
 	AZ(strcmp(av[0], "expect_pattern"));
 	ARGZ(vl, av, 1);
-	av++;
 	for (p = hp->body; *p != '\0'; p++) {
 		if (*p != t)
 			vtc_fatal(hp->vl,
