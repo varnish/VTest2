@@ -231,8 +231,12 @@ static void
 client_disc(void *priv, struct vtclog *vl, int *fdp)
 {
 	(void)priv;
-	vtc_log(vl, 3, "closing fd %d", *fdp);
-	VTCP_close(fdp);
+	if (*fdp < 0) {
+		vtc_log(vl, 3, "disc: fd %d", *fdp);
+	} else {
+		vtc_log(vl, 3, "closing fd %d", *fdp);
+		VTCP_close(fdp);
+	}
 }
 
 /**********************************************************************
