@@ -998,11 +998,11 @@ haproxy_build_backends(struct haproxy *h, const char *vsb_data)
 		 * with "quic" as VTC_SOCK_TYPE environment variable value.
 		 */
 		quic_sock =
-			(p - s >= HAPROXY_QUIC_SOCK_TYPE_PREFIX_LEN &&
+			(p - s >= (ssize_t)HAPROXY_QUIC_SOCK_TYPE_PREFIX_LEN &&
 			 !memcmp(p - HAPROXY_QUIC_SOCK_TYPE_PREFIX_LEN,
 			         HAPROXY_QUIC_SOCK_TYPE_PREFIX,
 			         HAPROXY_QUIC_SOCK_TYPE_PREFIX_LEN)) ||
-			(p - s >= HAPROXY_VTC_SOCK_TYPE_PREFIX_LEN &&
+			(p - s >= (ssize_t)HAPROXY_VTC_SOCK_TYPE_PREFIX_LEN &&
 			 !memcmp(p - HAPROXY_VTC_SOCK_TYPE_PREFIX_LEN,
 			         HAPROXY_VTC_SOCK_TYPE_PREFIX,
 			         HAPROXY_VTC_SOCK_TYPE_PREFIX_LEN) &&
