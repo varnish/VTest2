@@ -59,27 +59,6 @@ vtest: ${DEPS} ${SRCS}
 		${LIBS}
 
 #######################################################################
-# target for vtest with builtin varnish support (needs varnish source tree)
-
-varnishtest:	${DEPS} ${SRCS}
-
-	@[ -d "${VARNISH_SRC}" ] || \
-		( echo "${VARNISH_SRC} directory missing" 1>&2 ; exit 2)
-
-	${MAKE} \
-		 DEFINES="-DVTEST_WITH_VTC_VARNISH -DVTEST_WITH_VTC_LOGEXPECT" \
-		 `for s in $(SRCS); do echo $${s%.c}.o;done`
-
-	${CC} \
-		${LDFLAGS} \
-		-o varnishtest \
-		${OBJS} \
-		${LIBS} \
-		-L${VARNISH_SRC}/lib/libvarnishapi/.libs \
-		-Wl,--rpath,${VARNISH_SRC}/lib/libvarnishapi/.libs \
-		-lvarnishapi
-
-#######################################################################
 # Test target
 
 test: vtest
