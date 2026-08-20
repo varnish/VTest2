@@ -123,7 +123,7 @@ vtc_gunzip(struct http *hp, char *body, long *bodylen)
 	vout = vtc_gunzip_vsb(hp->vl, hp->fatal, vin);
 	VSB_destroy(&vin);
 
-	memcpy(body, VSB_data(vout), APOS(VSB_len(vout) + 1));
+	vmemcpy(body, VSB_data(vout), APOS(VSB_len(vout) + 1));
 	*bodylen = APOS(VSB_len(vout));
 	VSB_destroy(&vout);
 	vtc_log(hp->vl, 3, "new bodylen %ld", *bodylen);
@@ -210,7 +210,7 @@ vtc_gzip(struct http *hp, const char *input, char **body, long *bodylen, int fra
 #endif
 	*body = malloc(APOS(VSB_len(vout) + 1));
 	AN(*body);
-	memcpy(*body, VSB_data(vout), APOS(VSB_len(vout) + 1));
+	vmemcpy(*body, VSB_data(vout), APOS(VSB_len(vout) + 1));
 	*bodylen = APOS(VSB_len(vout));
 	VSB_destroy(&vout);
 	vtc_log(hp->vl, 3, "new bodylen %ld", *bodylen);

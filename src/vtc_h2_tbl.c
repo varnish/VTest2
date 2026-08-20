@@ -145,8 +145,8 @@ push_header (struct hpk_ctx *ctx, const struct hpk_hdr *oh)
 			h->header.key.len = oh->key.len;
 			h->header.key.ptr = malloc(oh->key.len + 1L);
 			AN(h->header.key.ptr);
-			memcpy(h->header.key.ptr,
-			    oh->key.ptr, oh->key.len + 1L);
+			vmemcpy(h->header.key.ptr, oh->key.ptr,
+				oh->key.len + 1L);
 		} else {
 			AN(oh->i);
 			ih = HPK_GetHdr(ctx, oh->i);
@@ -155,14 +155,15 @@ push_header (struct hpk_ctx *ctx, const struct hpk_hdr *oh)
 			h->header.key.len = ih->key.len;
 			h->header.key.ptr = malloc(ih->key.len + 1L);
 			AN(h->header.key.ptr);
-			memcpy(h->header.key.ptr,
-			    ih->key.ptr, ih->key.len + 1L);
+			vmemcpy(h->header.key.ptr, ih->key.ptr,
+				ih->key.len + 1L);
 		}
 
 		h->header.value.len = oh->value.len;
 		h->header.value.ptr = malloc(oh->value.len + 1L);
 		AN(h->header.value.ptr);
-		memcpy(h->header.value.ptr, oh->value.ptr, oh->value.len + 1L);
+		vmemcpy(h->header.value.ptr, oh->value.ptr,
+			oh->value.len + 1L);
 
 		VTAILQ_INSERT_HEAD(&ctx->dyntbl, h, list);
 		ctx->size += len;

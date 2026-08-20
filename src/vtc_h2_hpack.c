@@ -245,7 +245,7 @@ str_encode(struct hpk_iter *iter, const struct hpk_txt *t)
 	if (t->huff) {
 		return (huff_encode(iter, t->ptr, t->len));
 	} else {
-		memcpy(iter->buf, t->ptr, slen);
+		vmemcpy(iter->buf, t->ptr, slen);
 		iter->buf += slen;
 		return (ITER_DONE(iter));
 	}
@@ -281,7 +281,7 @@ str_decode(struct hpk_iter *iter, struct hpk_txt *t)
 		t->huff = 0;
 		t->ptr = malloc(num + 1L);
 		AN(t->ptr);
-		memcpy(t->ptr, iter->buf, num);
+		vmemcpy(t->ptr, iter->buf, num);
 		iter->buf += num;
 	}
 
@@ -297,7 +297,7 @@ txtcpy(struct hpk_txt *to, const struct hpk_txt *from)
 	//AZ(to->ptr);
 	to->ptr = malloc(from->len + 1L);
 	AN(to->ptr);
-	memcpy(to->ptr, from->ptr, from->len + 1L);
+	vmemcpy(to->ptr, from->ptr, from->len + 1L);
 	to->len = from->len;
 }
 

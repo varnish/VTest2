@@ -158,13 +158,15 @@ term_copy(void *priv, const teken_rect_t *r, const teken_pos_t *p)
 	if (p->tp_row < r->tr_begin.tp_row) {
 		/* Copy from top to bottom. */
 		for (y = 0; y < nrow; y++)
-			memmove(&pp->vram[p->tp_row + y][p->tp_col],
-			    &pp->vram[r->tr_begin.tp_row + y][r->tr_begin.tp_col], ncol);
+			vmemmove(&pp->vram[p->tp_row + y][p->tp_col],
+				 &pp->vram[r->tr_begin.tp_row + y][r->tr_begin.tp_col],
+				 ncol);
 	} else {
 		/* Copy from bottom to top. */
 		for (y = nrow - 1; y >= 0; y--)
-			memmove(&pp->vram[p->tp_row + y][p->tp_col],
-			    &pp->vram[r->tr_begin.tp_row + y][r->tr_begin.tp_col], ncol);
+			vmemmove(&pp->vram[p->tp_row + y][p->tp_col],
+				 &pp->vram[r->tr_begin.tp_row + y][r->tr_begin.tp_col],
+				 ncol);
 	}
 }
 
@@ -241,7 +243,7 @@ term_resize(struct process *pp, int lin, int col)
 			j = col;
 			if (j > pp->ncol)
 				j = pp->ncol;
-			memcpy(vram[i], pp->vram[i], j);
+			vmemcpy(vram[i], pp->vram[i], j);
 		}
 		for (i = 0; i < pp->nlin; i++)
 			free(pp->vram[i]);

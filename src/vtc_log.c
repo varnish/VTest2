@@ -177,7 +177,7 @@ vtc_log_emit(const struct vtclog *vl)
 		vtclog_left -= i;
 	}
 	assert(vtclog_left > l);
-	memcpy(vtclog_buf, VSB_data(vl->vsb), l);
+	vmemcpy(vtclog_buf, VSB_data(vl->vsb), l);
 	vtclog_buf += l;
 	*vtclog_buf = '\0';
 	vtclog_left -= l;

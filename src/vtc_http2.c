@@ -437,7 +437,7 @@ parse_data(struct stream *s, struct frame *f)
 
 	s->body = realloc(s->body, s->bodylen + size + 1L);
 	AN(s->body);
-	memcpy(s->body + s->bodylen, data, size);
+	vmemcpy(s->body + s->bodylen, data, size);
 	s->bodylen += size;
 	s->body[s->bodylen] = '\0';
 }
@@ -646,7 +646,7 @@ parse_ping(const struct stream *s, struct frame *f)
 	if (f->size != 8)
 		vtc_fatal(s->vl, "Size should be 8, but isn't (%d)", f->size);
 	f->md.ping.ack = f->flags & ACK;
-	memcpy(f->md.ping.data, f->data, 8);
+	vmemcpy(f->md.ping.data, f->data, 8);
 	f->md.ping.data[8] = '\0';
 
 	vtc_log(s->vl, 4, "ping->data: %s", f->md.ping.data);
@@ -685,7 +685,7 @@ parse_goaway(const struct stream *s, struct frame *f)
 		AN(f->md.goaway.debug);
 		f->md.goaway.debug[f->size - 8] = '\0';
 
-		memcpy(f->md.goaway.debug, f->data + 8, f->size - 8);
+		vmemcpy(f->md.goaway.debug, f->data + 8, f->size - 8);
 	}
 
 	vtc_log(s->vl, 3, "goaway->laststream: %d", stid);
@@ -1656,7 +1656,7 @@ cmd_tx11obj(CMD_ARGS)
 		s->dependency = stid;
 
 		assert(f.size + 5 < BUF_SIZE);
-		memmove(buf + 5, buf, f.size);
+		vmemmove(buf + 5, buf, f.size);
 		vbe32enc(buf, (stid | exclusive));
 		buf[4] = s->weight;
 		f.size += 5;
@@ -1671,10 +1671,10 @@ cmd_tx11obj(CMD_ARGS)
 			vtc_fatal(vl, "Padding is limited to 255 bytes");
 		f.flags |= PADDED;
 		assert(f.size + strlen(pad) < BUF_SIZE);
-		memmove(buf + 1, buf, f.size);
+		vmemmove(buf + 1, buf, f.size);
 		buf[0] = strlen(pad);
 		f.size += 1;
-		memcpy(buf + f.size, pad, strlen(pad));
+		vmemcpy(buf + f.size, pad, strlen(pad));
 		f.size += strlen(pad);
 		free(pad);
 	}
@@ -1766,9 +1766,9 @@ cmd_txdata(CMD_ARGS)
 		AN(data);
 		*((uint8_t *)data) = strlen(pad);
 		f.size = 1;
-		memcpy(data + f.size, body, strlen(body));
+		vmemcpy(data + f.size, body, strlen(body));
 		f.size += strlen(body);
-		memcpy(data + f.size, pad, strlen(pad));
+		vmemcpy(data + f.size, pad, strlen(pad));
 		f.size += strlen(pad);
 		f.data = data;
 	} else {
@@ -2107,7 +2107,7 @@ cmd_txgoaway(CMD_ARGS)
 			f.size = 8 + strlen(*av);
 			f.data = malloc(f.size);
 			AN(f.data);
-			memcpy(f.data + 8, *av, f.size - 8);
+			vmemcpy(f.data + 8, *av, f.size - 8);
 		} else
 			break;
 	}
