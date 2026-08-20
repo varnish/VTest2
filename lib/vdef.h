@@ -377,4 +377,10 @@ typedef struct {
 #  define vmemcpy(d, s, n) memcpy(d, s, n)
 #endif
 
+#if __has_builtin(__builtin_memmove)
+#  define vmemmove(d, s, n) __builtin_memmove(d, s, n)
+#else
+#  define vmemmove(d, s, n) memmove(d, s, n)
+#endif
+
 // ... to be extended
