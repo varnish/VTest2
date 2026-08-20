@@ -85,7 +85,7 @@ pp2cmp(const void *va, const void *vb)
 {
 	const struct pp2_type *a = va;
 	const struct pp2_type *b = vb;
-	return (strcmp(a->name, b->name));
+	return (vstrcmp(a->name, b->name));
 }
 
 void

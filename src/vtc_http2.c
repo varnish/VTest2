@@ -924,7 +924,7 @@ find_header(const struct hpk_hdr *h, const char *k)
 {
 	AN(k);
 
-	int kl = strlen(k);
+	int kl = vstrlen(k);
 	while (h->t) {
 		if (kl == h->key.len  && !strncasecmp(h->key.ptr, k, kl))
 			return (h->value.ptr);
@@ -964,11 +964,11 @@ cmd_var_resolve(const struct stream *s, const char *spec, char *buf)
 	 * ping.ack (PING)
 	 *	"true" if the ACK flag was set, "false" otherwise.
 	 */
-	if (!strcmp(spec, "ping.data")) {
+	if (!vstrcmp(spec, "ping.data")) {
 		CHECK_LAST_FRAME(PING);
 		return (f->md.ping.data);
 	}
-	if (!strcmp(spec, "ping.ack")) {
+	if (!vstrcmp(spec, "ping.ack")) {
 		CHECK_LAST_FRAME(PING);
 		snprintf(buf, 20, (f->flags & ACK) ? "true" : "false");
 		return (buf);
@@ -978,7 +978,7 @@ cmd_var_resolve(const struct stream *s, const char *spec, char *buf)
 	 * winup.size
 	 *	The size of the upgrade given by the WINDOW_UPDATE frame.
 	 */
-	if (!strcmp(spec, "winup.size")) {
+	if (!vstrcmp(spec, "winup.size")) {
 		CHECK_LAST_FRAME(WINDOW_UPDATE);
 		RETURN_BUFFED(f->md.winup_size);
 	}
@@ -993,16 +993,16 @@ cmd_var_resolve(const struct stream *s, const char *spec, char *buf)
 	 * prio.weight
 	 *	The dependency weight.
 	 */
-	if (!strcmp(spec, "prio.stream")) {
+	if (!vstrcmp(spec, "prio.stream")) {
 		CHECK_LAST_FRAME(PRIORITY);
 		RETURN_BUFFED(f->md.prio.stream);
 	}
-	if (!strcmp(spec, "prio.exclusive")) {
+	if (!vstrcmp(spec, "prio.exclusive")) {
 		CHECK_LAST_FRAME(PRIORITY);
 		snprintf(buf, 20, f->md.prio.exclusive ? "true" : "false");
 		return (buf);
 	}
-	if (!strcmp(spec, "prio.weight")) {
+	if (!vstrcmp(spec, "prio.weight")) {
 		CHECK_LAST_FRAME(PRIORITY);
 		RETURN_BUFFED(f->md.prio.weight);
 	}
@@ -1011,7 +1011,7 @@ cmd_var_resolve(const struct stream *s, const char *spec, char *buf)
 	 * rst.err
 	 *	The error code (as integer) of the RESET_STREAM frame.
 	 */
-	if (!strcmp(spec, "rst.err")) {
+	if (!vstrcmp(spec, "rst.err")) {
 		CHECK_LAST_FRAME(RST_STREAM);
 		RETURN_BUFFED(f->md.rst_err);
 	}
@@ -1050,29 +1050,29 @@ cmd_var_resolve(const struct stream *s, const char *spec, char *buf)
 	 * settings.tls_reneg
 	 * 	Value of TLS_RENEG_PERMITTED if set, <undef> otherwise.
 	 */
-	if (!strncmp(spec, "settings.", 9)) {
+	if (!vstrncmp(spec, "settings.", 9)) {
 		CHECK_LAST_FRAME(SETTINGS);
 		spec += 9;
-		if (!strcmp(spec, "ack")) {
+		if (!vstrcmp(spec, "ack")) {
 			snprintf(buf, 20, (f->flags & ACK) ? "true" : "false");
 			return (buf);
 		}
-		if (!strcmp(spec, "hdrtbl"))	RETURN_SETTING(HEADER_TABLE_SIZE);
-		if (!strcmp(spec, "push"))	RETURN_SETTING_BOOL(ENABLE_PUSH);
-		if (!strcmp(spec, "maxstreams"))RETURN_SETTING(MAX_CONCURRENT_STREAMS);
-		if (!strcmp(spec, "winsize"))	RETURN_SETTING(INITIAL_WINDOW_SIZE);
-		if (!strcmp(spec, "framesize"))	RETURN_SETTING(MAX_FRAME_SIZE);
-		if (!strcmp(spec, "hdrsize"))	RETURN_SETTING(MAX_HEADER_LIST_SIZE);
-		if (!strcmp(spec, "connect"))	RETURN_SETTING_BOOL(ENABLE_CONNECT_PROTOCOL);
-		if (!strcmp(spec, "no_prio"))	RETURN_SETTING_BOOL(NO_RFC7540_PRIORITIES);
-		if (!strcmp(spec, "tls_reneg"))	RETURN_SETTING(TLS_RENEG_PERMITTED);
+		if (!vstrcmp(spec, "hdrtbl"))	RETURN_SETTING(HEADER_TABLE_SIZE);
+		if (!vstrcmp(spec, "push"))	RETURN_SETTING_BOOL(ENABLE_PUSH);
+		if (!vstrcmp(spec, "maxstreams"))RETURN_SETTING(MAX_CONCURRENT_STREAMS);
+		if (!vstrcmp(spec, "winsize"))	RETURN_SETTING(INITIAL_WINDOW_SIZE);
+		if (!vstrcmp(spec, "framesize"))	RETURN_SETTING(MAX_FRAME_SIZE);
+		if (!vstrcmp(spec, "hdrsize"))	RETURN_SETTING(MAX_HEADER_LIST_SIZE);
+		if (!vstrcmp(spec, "connect"))	RETURN_SETTING_BOOL(ENABLE_CONNECT_PROTOCOL);
+		if (!vstrcmp(spec, "no_prio"))	RETURN_SETTING_BOOL(NO_RFC7540_PRIORITIES);
+		if (!vstrcmp(spec, "tls_reneg"))	RETURN_SETTING(TLS_RENEG_PERMITTED);
 	}
 	/* SECTION: stream.spec.zexpect.push PUSH_PROMISE specific
 	 *
 	 * push.id
 	 *	The id of the promised stream.
 	 */
-	if (!strcmp(spec, "push.id")) {
+	if (!vstrcmp(spec, "push.id")) {
 		CHECK_LAST_FRAME(PUSH_PROMISE);
 		RETURN_BUFFED(f->md.promised);
 	}
@@ -1087,15 +1087,15 @@ cmd_var_resolve(const struct stream *s, const char *spec, char *buf)
 	 * goaway.debug
 	 *	Debug data, if any.
 	 */
-	if (!strncmp(spec, "goaway.", 7)) {
+	if (!vstrncmp(spec, "goaway.", 7)) {
 		spec += 7;
 		CHECK_LAST_FRAME(GOAWAY);
 
-		if (!strcmp(spec, "err"))
+		if (!vstrcmp(spec, "err"))
 			RETURN_BUFFED(f->md.goaway.err);
-		else if (!strcmp(spec, "laststream"))
+		else if (!vstrcmp(spec, "laststream"))
 			RETURN_BUFFED(f->md.goaway.stream);
-		else if (!strcmp(spec, "debug"))
+		else if (!vstrcmp(spec, "debug"))
 			return (f->md.goaway.debug);
 	}
 	/* SECTION: stream.spec.zexpect.zframe Generic frame
@@ -1116,15 +1116,15 @@ cmd_var_resolve(const struct stream *s, const char *spec, char *buf)
 	 * frame.padding (for DATA, HEADERS, PUSH_PROMISE frames)
 	 *	Number of padded bytes.
 	 */
-	if (!strncmp(spec, "frame.", 6)) {
+	if (!vstrncmp(spec, "frame.", 6)) {
 		spec += 6;
 		if (!f)
 			vtc_fatal(s->vl, "No frame received yet.");
-		if (!strcmp(spec, "data"))   { return (f->data); }
-		else if (!strcmp(spec, "type"))   { RETURN_BUFFED(f->type); }
-		else if (!strcmp(spec, "size"))	  { RETURN_BUFFED(f->size); }
-		else if (!strcmp(spec, "stream")) { RETURN_BUFFED(f->stid); }
-		else if (!strcmp(spec, "padding")) {
+		if (!vstrcmp(spec, "data"))   { return (f->data); }
+		else if (!vstrcmp(spec, "type"))   { RETURN_BUFFED(f->type); }
+		else if (!vstrcmp(spec, "size"))	  { RETURN_BUFFED(f->size); }
+		else if (!vstrcmp(spec, "stream")) { RETURN_BUFFED(f->stid); }
+		else if (!vstrcmp(spec, "padding")) {
 			if (f->type != TYPE_DATA &&
 					f->type != TYPE_HEADERS &&
 					f->type != TYPE_PUSH_PROMISE)
@@ -1150,24 +1150,24 @@ cmd_var_resolve(const struct stream *s, const char *spec, char *buf)
 	 * stream.dependency
 	 *	Id of the stream this one depends on.
 	 */
-	if (!strcmp(spec, "stream.window")) {
+	if (!vstrcmp(spec, "stream.window")) {
 		snprintf(buf, 20, "%jd",
 		    (intmax_t)(s->id ? s->win_self : s->hp->h2_win_self->size));
 		return (buf);
 	}
-	if (!strcmp(spec, "stream.peer_window")) {
+	if (!vstrcmp(spec, "stream.peer_window")) {
 		snprintf(buf, 20, "%jd",
 		    (intmax_t)(s->id ? s->win_peer : s->hp->h2_win_peer->size));
 		return (buf);
 	}
-	if (!strcmp(spec, "stream.weight")) {
+	if (!vstrcmp(spec, "stream.weight")) {
 		if (s->id) {
 			snprintf(buf, 20, "%d", s->weight);
 			return (buf);
 		} else
 			return (NULL);
 	}
-	if (!strcmp(spec, "stream.dependency")) {
+	if (!vstrcmp(spec, "stream.dependency")) {
 		if (s->id) {
 			snprintf(buf, 20, "%d", s->dependency);
 			return (buf);
@@ -1193,7 +1193,7 @@ cmd_var_resolve(const struct stream *s, const char *spec, char *buf)
 	 *	Value of the header at index INT of the decoding/encoding
 	 *	table.
 	 */
-	if (!strncmp(spec, "tbl.dec", 7) || !strncmp(spec, "tbl.enc", 7)) {
+	if (!vstrncmp(spec, "tbl.dec", 7) || !vstrncmp(spec, "tbl.enc", 7)) {
 		if (spec[4] == 'd')
 			ctx = s->hp->decctx;
 		else
@@ -1210,11 +1210,11 @@ cmd_var_resolve(const struct stream *s, const char *spec, char *buf)
 			h = HPK_GetHdr(ctx, idx + 61);
 			return (h ? h->value.ptr : NULL);
 		}
-		else if (!strcmp(spec, ".size"))
+		else if (!vstrcmp(spec, ".size"))
 			RETURN_BUFFED(HPK_GetTblSize(ctx));
-		else if (!strcmp(spec, ".maxsize"))
+		else if (!vstrcmp(spec, ".maxsize"))
 			RETURN_BUFFED(HPK_GetTblMaxSize(ctx));
-		else if (!strcmp(spec, ".length"))
+		else if (!vstrcmp(spec, ".length"))
 			RETURN_BUFFED(HPK_GetTblLength(ctx));
 	}
 	/* SECTION: stream.spec.zexpect.zre Request and response
@@ -1246,7 +1246,7 @@ cmd_var_resolve(const struct stream *s, const char *spec, char *buf)
 	 * req.scheme / resp.scheme
 	 *	:method pseudo-header's value.
 	 */
-	if (!strncmp(spec, "req.", 4) || !strncmp(spec, "resp.", 5)) {
+	if (!vstrncmp(spec, "req.", 4) || !vstrncmp(spec, "resp.", 5)) {
 		if (spec[2] == 'q') {
 			h = s->req;
 			spec += 4;
@@ -1254,27 +1254,27 @@ cmd_var_resolve(const struct stream *s, const char *spec, char *buf)
 			h = s->resp;
 			spec += 5;
 		}
-		if (!strcmp(spec, "body"))
+		if (!vstrcmp(spec, "body"))
 			return (s->body);
-		else if (!strcmp(spec, "bodylen"))
+		else if (!vstrcmp(spec, "bodylen"))
 			RETURN_BUFFED(s->bodylen);
-		else if (!strcmp(spec, "status"))
+		else if (!vstrcmp(spec, "status"))
 			return (find_header(h, ":status"));
-		else if (!strcmp(spec, "url"))
+		else if (!vstrcmp(spec, "url"))
 			return (find_header(h, ":path"));
-		else if (!strcmp(spec, "method"))
+		else if (!vstrcmp(spec, "method"))
 			return (find_header(h, ":method"));
-		else if (!strcmp(spec, "authority"))
+		else if (!vstrcmp(spec, "authority"))
 			return (find_header(h, ":authority"));
-		else if (!strcmp(spec, "scheme"))
+		else if (!vstrcmp(spec, "scheme"))
 			return (find_header(h, ":scheme"));
-		else if (!strncmp(spec, "http.", 5))
+		else if (!vstrncmp(spec, "http.", 5))
 			return (find_header(h, spec + 5));
 		else
 			return (NULL);
 	}
 #define H2_ERROR(U,v,sc,g,r,t) \
-	if (!strcmp(spec, #U)) { return (#v); }
+	if (!vstrcmp(spec, #U)) { return (#v); }
 #include "tbl/h2_error.h"
 	return (spec);
 }
@@ -1312,10 +1312,10 @@ cmd_sendhex(CMD_ARGS)
 {							\
 	AN(k);						\
 	hdr.key.ptr = TRUST_ME(k);			\
-	hdr.key.len = strlen(k);			\
+	hdr.key.len = vstrlen(k);			\
 	AN(v);						\
 	hdr.value.ptr = TRUST_ME(v);			\
-	hdr.value.len = strlen(v);			\
+	hdr.value.len = vstrlen(v);			\
 	assert(HPK_EncHdr(iter, &hdr) != hpk_err);	\
 }
 
@@ -1329,7 +1329,7 @@ cmd_sendhex(CMD_ARGS)
 	av++;								       \
 	AN(*av);							       \
 	hdr.field.ptr = *av;						       \
-	hdr.field.len = strlen(*av);					       \
+	hdr.field.len = vstrlen(*av);					       \
 }
 
 
@@ -1464,19 +1464,19 @@ cmd_tx11obj(CMD_ARGS)
 	buf = malloc(BUF_SIZE);
 	AN(buf);
 
-	if (!strcmp(cmd_str, "txreq")) {
+	if (!vstrcmp(cmd_str, "txreq")) {
 		ONLY_H2_CLIENT(s->hp, av);
 		f.type = TYPE_HEADERS;
 		f.flags |= END_STREAM;
 		method_done = 0;
 		path_done = 0;
 		scheme_done = 0;
-	} else if (!strcmp(cmd_str, "txresp")) {
+	} else if (!vstrcmp(cmd_str, "txresp")) {
 		ONLY_H2_SERVER(s->hp, av);
 		f.type = TYPE_HEADERS;
 		f.flags |= END_STREAM;
 		status_done = 0;
-	} else if (!strcmp(cmd_str, "txpush")) {
+	} else if (!vstrcmp(cmd_str, "txpush")) {
 		ONLY_H2_SERVER(s->hp, av);
 		f.type = TYPE_PUSH_PROMISE;
 		method_done = 0;
@@ -1490,8 +1490,8 @@ cmd_tx11obj(CMD_ARGS)
 	} else
 		iter = HPK_NewIter(s->hp->encctx, buf, BUF_SIZE);
 
-#define AV_IS(str) !strcmp(*av, str)
-#define CMD_IS(str) !strcmp(cmd_str, str)
+#define AV_IS(str) !vstrcmp(*av, str)
+#define CMD_IS(str) !vstrcmp(cmd_str, str)
 	while (*++av) {
 		memset(&hdr, 0, sizeof(hdr));
 		hdr.t = hpk_not;
@@ -1591,7 +1591,7 @@ cmd_tx11obj(CMD_ARGS)
 				AZ(body);
 				REPLACE(body, av[1]);
 				AN(body);
-				bodylen = strlen(body);
+				bodylen = vstrlen(body);
 				f.flags &= ~END_STREAM;
 				av++;
 			}
@@ -1607,11 +1607,11 @@ cmd_tx11obj(CMD_ARGS)
 			else if (AV_IS("-bodylen")) {
 				AZ(body);
 				body = synth_body(av[1], 0);
-				bodylen = strlen(body);
+				bodylen = vstrlen(body);
 				f.flags &= ~END_STREAM;
 				av++;
 			}
-			else if (!strncmp(*av, "-gzip", 5)) {
+			else if (!vstrncmp(*av, "-gzip", 5)) {
 				i = vtc_gzip_cmd(s->hp, av, &body, &bodylen);
 				if (i == 0)
 					break;
@@ -1667,15 +1667,15 @@ cmd_tx11obj(CMD_ARGS)
 			exclusive_stream_dependency(s);
 	}
 	if (pad) {
-		if (strlen(pad) > 255)
+		if (vstrlen(pad) > 255)
 			vtc_fatal(vl, "Padding is limited to 255 bytes");
 		f.flags |= PADDED;
-		assert(f.size + strlen(pad) < BUF_SIZE);
+		assert(f.size + vstrlen(pad) < BUF_SIZE);
 		vmemmove(buf + 1, buf, f.size);
-		buf[0] = strlen(pad);
+		buf[0] = vstrlen(pad);
 		f.size += 1;
-		vmemcpy(buf + f.size, pad, strlen(pad));
-		f.size += strlen(pad);
+		vmemcpy(buf + f.size, pad, vstrlen(pad));
+		f.size += vstrlen(pad);
 		free(pad);
 	}
 	if (f.type == TYPE_PUSH_PROMISE)
@@ -1730,24 +1730,24 @@ cmd_txdata(CMD_ARGS)
 	INIT_FRAME(f, DATA, 0, s->id, END_STREAM);
 
 	while (*++av) {
-		if (!strcmp(*av, "-data")) {
+		if (!vstrcmp(*av, "-data")) {
 			AZ(body);
 			av++;
 			body = strdup(*av);
-		} else if (!strcmp(*av, "-datalen")) {
+		} else if (!vstrcmp(*av, "-datalen")) {
 			AZ(body);
 			av++;
 			body = synth_body(*av, 0);
-		} else if (!strcmp(*av, "-pad")) {
+		} else if (!vstrcmp(*av, "-pad")) {
 			AZ(pad);
 			av++;
 			AN(*av);
 			pad = strdup(*av);
-		} else if (!strcmp(*av, "-padlen")) {
+		} else if (!vstrcmp(*av, "-padlen")) {
 			AZ(pad);
 			av++;
 			pad = synth_body(*av, 0);
-		} else if (!strcmp(*av, "-nostrend"))
+		} else if (!vstrcmp(*av, "-nostrend"))
 			f.flags &= ~END_STREAM;
 		else
 			break;
@@ -1760,19 +1760,19 @@ cmd_txdata(CMD_ARGS)
 
 	if (pad) {
 		f.flags |= PADDED;
-		if (strlen(pad) > 255)
+		if (vstrlen(pad) > 255)
 			vtc_fatal(vl, "Padding is limited to 255 bytes");
-		data = malloc( 1 + strlen(body) + strlen(pad));
+		data = malloc( 1 + vstrlen(body) + vstrlen(pad));
 		AN(data);
-		*((uint8_t *)data) = strlen(pad);
+		*((uint8_t *)data) = vstrlen(pad);
 		f.size = 1;
-		vmemcpy(data + f.size, body, strlen(body));
-		f.size += strlen(body);
-		vmemcpy(data + f.size, pad, strlen(pad));
-		f.size += strlen(pad);
+		vmemcpy(data + f.size, body, vstrlen(body));
+		f.size += vstrlen(body);
+		vmemcpy(data + f.size, pad, vstrlen(pad));
+		f.size += vstrlen(pad);
 		f.data = data;
 	} else {
-		f.size = strlen(body);
+		f.size = vstrlen(body);
 		f.data = body;
 	}
 	write_frame(s, &f, 1);
@@ -1804,10 +1804,10 @@ cmd_txrst(CMD_ARGS)
 	INIT_FRAME(f, RST_STREAM, 4, s->id, 0);
 
 	while (*++av) {
-		if (!strcmp(*av, "-err")) {
+		if (!vstrcmp(*av, "-err")) {
 			++av;
 			for (err = 0; h2_errs[err]; err++) {
-				if (!strcmp(h2_errs[err], *av))
+				if (!vstrcmp(h2_errs[err], *av))
 					break;
 			}
 
@@ -1858,11 +1858,11 @@ cmd_txprio(CMD_ARGS)
 	f.data = (void *)buf;
 
 	while (*++av) {
-		if (!strcmp(*av, "-stream")) {
+		if (!vstrcmp(*av, "-stream")) {
 			STRTOU32_CHECK(stid, av, p, vl, "-stream", 0);
-		} else if (!strcmp(*av, "-ex")) {
+		} else if (!vstrcmp(*av, "-ex")) {
 			exclusive = 1U << 31;
-		} else if (!strcmp(*av, "-weight")) {
+		} else if (!vstrcmp(*av, "-weight")) {
 			STRTOU32_CHECK(weight, av, p, vl, "-weight", 8);
 		} else
 			break;
@@ -1898,9 +1898,9 @@ cmd_txprio(CMD_ARGS)
 #define PUT_BOOL(av, vl, name, code)					\
 	do {								\
 		++av;							\
-		if (!strcmp(*av, "false"))				\
+		if (!vstrcmp(*av, "false"))				\
 			PUT(0, code);					\
-		else if (!strcmp(*av, "true"))				\
+		else if (!vstrcmp(*av, "true"))				\
 			PUT(1, code);					\
 		else {							\
 			vtc_fatal(vl, "Push parameter is either "	\
@@ -1969,31 +1969,31 @@ cmd_txsettings(CMD_ARGS)
 
 	PTOK(pthread_mutex_lock(&hp->mtx));
 	while (*++av) {
-		if (!strcmp(*av, "-push"))
+		if (!vstrcmp(*av, "-push"))
 			PUT_BOOL(av, vl, push, SETTINGS_ENABLE_PUSH);
-		else if (!strcmp(*av, "-hdrtbl")) {
+		else if (!vstrcmp(*av, "-hdrtbl")) {
 			PUT_KV(av, vl, hdrtbl, val, SETTINGS_HEADER_TABLE_SIZE);
 			assert(HPK_ResizeTbl(s->hp->decctx, val) != hpk_err);
 		}
-		else if (!strcmp(*av, "-maxstreams"))
+		else if (!vstrcmp(*av, "-maxstreams"))
 			PUT_KV(av, vl, maxstreams, val, SETTINGS_MAX_CONCURRENT_STREAMS);
-		else if (!strcmp(*av, "-winsize"))	{
+		else if (!vstrcmp(*av, "-winsize"))	{
 			PUT_KV(av, vl, winsize, val, SETTINGS_INITIAL_WINDOW_SIZE);
 			VTAILQ_FOREACH(s2, &hp->streams, list)
 				s2->win_self += (val - hp->h2_win_self->init);
 			hp->h2_win_self->init = val;
 		}
-		else if (!strcmp(*av, "-framesize"))
+		else if (!vstrcmp(*av, "-framesize"))
 			PUT_KV(av, vl, framesize, val, SETTINGS_MAX_FRAME_SIZE);
-		else if (!strcmp(*av, "-hdrsize"))
+		else if (!vstrcmp(*av, "-hdrsize"))
 			PUT_KV(av, vl, hdrsize, val, SETTINGS_MAX_HEADER_LIST_SIZE);
-		else if (!strcmp(*av, "-connect"))
+		else if (!vstrcmp(*av, "-connect"))
 			PUT_BOOL(av, vl, connect, SETTINGS_ENABLE_CONNECT_PROTOCOL);
-		else if (!strcmp(*av, "-no_prio"))
+		else if (!vstrcmp(*av, "-no_prio"))
 			PUT_BOOL(av, vl, no_prio, SETTINGS_NO_RFC7540_PRIORITIES);
-		else if (!strcmp(*av, "-tls_reneg"))
+		else if (!vstrcmp(*av, "-tls_reneg"))
 			PUT_KV(av, vl, tls_reneg, val, SETTINGS_TLS_RENEG_PERMITTED);
-		else if (!strncmp(*av, "-0x", 3)) {
+		else if (!vstrncmp(*av, "-0x", 3)) {
 			p = *av + 3;
 			errno = 0;
 			u = strtoul(p, &e, 16);
@@ -2002,7 +2002,7 @@ cmd_txsettings(CMD_ARGS)
 			assert(u <= 0xffff);
 			PUT_KV(av, vl, hdrtbl, val, (uint16_t)u);
 		}
-		else if (!strcmp(*av, "-ack"))
+		else if (!vstrcmp(*av, "-ack"))
 			f.flags |= 1;
 		else
 			break;
@@ -2037,14 +2037,14 @@ cmd_txping(CMD_ARGS)
 	INIT_FRAME(f, PING, 8, s->id, 0);
 
 	while (*++av) {
-		if (!strcmp(*av, "-data")) {
+		if (!vstrcmp(*av, "-data")) {
 			av++;
 			if (f.data)
 				vtc_fatal(vl, "this frame already has data");
-			if (strlen(*av) != 8)
+			if (vstrlen(*av) != 8)
 				vtc_fatal(vl, "data must be a 8-char string, found  (%s)", *av);
 			f.data = *av;
-		} else if (!strcmp(*av, "-ack"))
+		} else if (!vstrcmp(*av, "-ack"))
 			f.flags |= 1;
 		else
 			break;
@@ -2088,23 +2088,23 @@ cmd_txgoaway(CMD_ARGS)
 	INIT_FRAME(f, GOAWAY, 8, s->id, 0);
 
 	while (*++av) {
-		if (!strcmp(*av, "-err")) {
+		if (!vstrcmp(*av, "-err")) {
 			++av;
 			for (err = 0; h2_errs[err]; err++)
-				if (!strcmp(h2_errs[err], *av))
+				if (!vstrcmp(h2_errs[err], *av))
 					break;
 
 			if (h2_errs[err])
 				continue;
 
 			STRTOU32(err, *av, p, vl, "-err");
-		} else if (!strcmp(*av, "-laststream")) {
+		} else if (!vstrcmp(*av, "-laststream")) {
 			STRTOU32_CHECK(ls, av, p, vl, "-laststream", 31);
-		} else if (!strcmp(*av, "-debug")) {
+		} else if (!vstrcmp(*av, "-debug")) {
 			++av;
 			if (f.data)
 				vtc_fatal(vl, "this frame already has debug data");
-			f.size = 8 + strlen(*av);
+			f.size = 8 + vstrlen(*av);
 			f.data = malloc(f.size);
 			AN(f.data);
 			vmemcpy(f.data + 8, *av, f.size - 8);
@@ -2153,7 +2153,7 @@ cmd_txwinup(CMD_ARGS)
 	f.data = buf;
 
 	while (*++av)
-		if (!strcmp(*av, "-size")) {
+		if (!vstrcmp(*av, "-size")) {
 			STRTOU32_CHECK(size, av, p, vl, "-size", 0);
 		} else
 			break;
@@ -2234,12 +2234,12 @@ cmd_rxhdrs(CMD_ARGS)
 	CAST_OBJ_NOTNULL(s, priv, STREAM_MAGIC);
 
 	while (*++av) {
-		if (!strcmp(*av, "-some")) {
+		if (!vstrcmp(*av, "-some")) {
 			STRTOU32_CHECK(times, av, p, vl, "-some", 0);
 			if (!times)
 				vtc_fatal(vl, "-some argument must be more"
 					       "than 0 (found \"%s\")\n", *av);
-		} else if (!strcmp(*av, "-all"))
+		} else if (!vstrcmp(*av, "-all"))
 			loop = 1;
 		else
 			break;
@@ -2272,12 +2272,12 @@ cmd_rxcont(CMD_ARGS)
 	CAST_OBJ_NOTNULL(s, priv, STREAM_MAGIC);
 
 	while (*++av)
-		if (!strcmp(*av, "-some")) {
+		if (!vstrcmp(*av, "-some")) {
 			STRTOU32(times, *av, p, vl, "-some");
 			if (!times)
 				vtc_fatal(vl, "-some argument must be more"
 					       "than 0 (found \"%s\")\n", *av);
-		} else if (!strcmp(*av, "-all"))
+		} else if (!vstrcmp(*av, "-all"))
 			loop = 1;
 		else
 			break;
@@ -2322,13 +2322,13 @@ cmd_rxdata(CMD_ARGS)
 	CAST_OBJ_NOTNULL(s, priv, STREAM_MAGIC);
 
 	while (*++av)
-		if (!strcmp(*av, "-some")) {
+		if (!vstrcmp(*av, "-some")) {
 			av++;
 			STRTOU32(times, *av, p, vl, "-some");
 			if (!times)
 				vtc_fatal(vl, "-some argument must be more"
 					       "than 0 (found \"%s\")\n", *av);
-		} else if (!strcmp(*av, "-all"))
+		} else if (!vstrcmp(*av, "-all"))
 			loop = 1;
 		else
 			break;
@@ -2366,7 +2366,7 @@ cmd_rxmsg(CMD_ARGS)
 
 	CAST_OBJ_NOTNULL(s, priv, STREAM_MAGIC);
 
-	if (!strcmp(av[0], "rxreq"))
+	if (!vstrcmp(av[0], "rxreq"))
 		ONLY_H2_SERVER(s->hp, av);
 	else
 		ONLY_H2_CLIENT(s->hp, av);
@@ -2430,12 +2430,12 @@ cmd_rxpush(CMD_ARGS)
 	CAST_OBJ_NOTNULL(s, priv, STREAM_MAGIC);
 
 	while (*++av) {
-		if (!strcmp(*av, "-some")) {
+		if (!vstrcmp(*av, "-some")) {
 			STRTOU32_CHECK(times, av, p, vl, "-some", 0);
 			if (!times)
 				vtc_fatal(vl, "-some argument must be more"
 					       "than 0 (found \"%s\")\n", *av);
-		} else if (!strcmp(*av, "-all")) {
+		} else if (!vstrcmp(*av, "-all")) {
 			loop = 1;
 		} else
 			break;
@@ -2586,7 +2586,7 @@ cmd_expect(CMD_ARGS)
 	hp = s->hp;
 	CHECK_OBJ_NOTNULL(hp, HTTP_MAGIC);
 
-	AZ(strcmp(av[0], "expect"));
+	AZ(vstrcmp(av[0], "expect"));
 	ARGN(vl, av, 1);
 	ARGN(vl, av, 2);
 	ARGN(vl, av, 3);
@@ -2636,7 +2636,7 @@ cmd_write_body(CMD_ARGS)
 	AN(av[0]);
 	ARGN(vl, av, 1);
 	ARGZ(vl, av, 2);
-	AZ(strcmp(av[0], "write_body"));
+	AZ(vstrcmp(av[0], "write_body"));
 	if (VFIL_writefile(NULL, av[1], s->body, s->bodylen) != 0)
 		vtc_fatal(s->vl, "failed to write body: %s (%d)",
 		    strerror(errno), errno);
@@ -2702,7 +2702,7 @@ stream_new(const char *name, struct http *h)
 	char *p, buf[20];
 	struct stream *s;
 
-	if (!strcmp("next", name)) {
+	if (!vstrcmp("next", name)) {
 		if (h->last_stream > 0)
 			bprintf(buf, "%d", h->last_stream + 2);
 		else
@@ -2875,11 +2875,11 @@ cmd_stream(CMD_ARGS)
 	(void)vl;
 	CAST_OBJ_NOTNULL(h, priv, HTTP_MAGIC);
 
-	AZ(strcmp(av[0], "stream"));
+	AZ(vstrcmp(av[0], "stream"));
 	av++;
 
 	VTAILQ_FOREACH(s, &h->streams, list)
-		if (!strcmp(s->name, av[0]))
+		if (!vstrcmp(s->name, av[0]))
 			break;
 	if (s == NULL)
 		s = stream_new(av[0], h);
@@ -2889,7 +2889,7 @@ cmd_stream(CMD_ARGS)
 		if (vtc_error)
 			break;
 
-		if (!strcmp(*av, "-wait")) {
+		if (!vstrcmp(*av, "-wait")) {
 			stream_wait(s);
 			continue;
 		}
@@ -2898,11 +2898,11 @@ cmd_stream(CMD_ARGS)
 		if (s->running)
 			stream_wait(s);
 
-		if (!strcmp(*av, "-start")) {
+		if (!vstrcmp(*av, "-start")) {
 			stream_start(s);
 			continue;
 		}
-		if (!strcmp(*av, "-run")) {
+		if (!vstrcmp(*av, "-run")) {
 			stream_run(s);
 			continue;
 		}

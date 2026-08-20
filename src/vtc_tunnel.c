@@ -232,7 +232,7 @@ cmd_tunnel_send(CMD_ARGS)
 	assert(t->state == TUNNEL_PAUSED);
 	AZ(t->send_lane->wrk_len);
 	AZ(t->recv_lane->wrk_len);
-	if (!strcmp(av[0], "send"))
+	if (!vstrcmp(av[0], "send"))
 		t->send_lane->wrk_len = len;
 	else
 		t->recv_lane->wrk_len = len;
@@ -712,14 +712,14 @@ cmd_tunnel(CMD_ARGS)
 		return;
 	}
 
-	AZ(strcmp(av[0], "tunnel"));
+	AZ(vstrcmp(av[0], "tunnel"));
 	av++;
 
 	VTC_CHECK_NAME(vl, av[0], "Tunnel", 't');
 
 	PTOK(pthread_mutex_lock(&tunnel_mtx));
 	VTAILQ_FOREACH(t, &tunnels, list)
-		if (!strcmp(t->name, av[0]))
+		if (!vstrcmp(t->name, av[0]))
 			break;
 	PTOK(pthread_mutex_unlock(&tunnel_mtx));
 	if (t == NULL)
@@ -730,7 +730,7 @@ cmd_tunnel(CMD_ARGS)
 	for (; *av != NULL; av++) {
 		if (vtc_error)
 			break;
-		if (!strcmp(*av, "-wait")) {
+		if (!vstrcmp(*av, "-wait")) {
 			if (t->state == TUNNEL_STOPPED)
 				vtc_fatal(t->vl, "Tunnel not -started");
 			tunnel_wait(t);
@@ -742,21 +742,21 @@ cmd_tunnel(CMD_ARGS)
 			tunnel_wait(t);
 
 		assert(t->state == TUNNEL_STOPPED);
-		if (!strcmp(*av, "-connect")) {
+		if (!vstrcmp(*av, "-connect")) {
 			bprintf(t->connect, "%s", av[1]);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-listen")) {
+		if (!vstrcmp(*av, "-listen")) {
 			bprintf(t->listen, "%s", av[1]);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-start")) {
+		if (!vstrcmp(*av, "-start")) {
 			tunnel_start(t);
 			continue;
 		}
-		if (!strcmp(*av, "-start+pause")) {
+		if (!vstrcmp(*av, "-start+pause")) {
 			tunnel_start_pause(t);
 			continue;
 		}

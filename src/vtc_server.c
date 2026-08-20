@@ -512,12 +512,12 @@ cmd_server(CMD_ARGS)
 		return;
 	}
 
-	AZ(strcmp(av[0], "server"));
+	AZ(vstrcmp(av[0], "server"));
 	av++;
 
 	PTOK(pthread_mutex_lock(&server_mtx));
 	VTAILQ_FOREACH(s, &servers, list)
-		if (!strcmp(s->name, av[0]))
+		if (!vstrcmp(s->name, av[0]))
 			break;
 	PTOK(pthread_mutex_unlock(&server_mtx));
 	if (s == NULL)
@@ -528,14 +528,14 @@ cmd_server(CMD_ARGS)
 	for (; *av != NULL; av++) {
 		if (vtc_error)
 			break;
-		if (!strcmp(*av, "-wait")) {
+		if (!vstrcmp(*av, "-wait")) {
 			if (!s->run)
 				vtc_fatal(s->vl, "Server not -started");
 			server_wait(s);
 			continue;
 		}
 
-		if (!strcmp(*av, "-break")) {
+		if (!vstrcmp(*av, "-break")) {
 			server_break(s);
 			continue;
 		}
@@ -552,19 +552,19 @@ cmd_server(CMD_ARGS)
 		if (Sess_GetOpt(s->vsp, &av))
 			continue;
 
-		if (!strcmp(*av, "-listen")) {
+		if (!vstrcmp(*av, "-listen")) {
 			if (s->sock >= 0)
 				VTCP_close(&s->sock);
 			bprintf(s->listen, "%s", av[1]);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-start")) {
+		if (!vstrcmp(*av, "-start")) {
 			server_start(s);
 			continue;
 		}
-		if (!strcmp(*av, "-dispatch")) {
-			if (strcmp(s->name, "s0"))
+		if (!vstrcmp(*av, "-dispatch")) {
+			if (vstrcmp(s->name, "s0"))
 				vtc_fatal(s->vl,
 				    "server -dispatch only works on s0");
 			server_dispatch(s);

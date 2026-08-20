@@ -272,9 +272,9 @@ term_find_textline(const struct process *pp, int *x, int y, const char *pat)
 		}
 	} else if (*x <= pp->ncol) {
 		t = pp->vram[y] + *x - 1;
-		l = strlen(pat);
+		l = vstrlen(pat);
 		assert((*x - 1) + (l - 1) < pp->ncol);
-		if (!memcmp(t, pat, l))
+		if (!vmemcmp(t, pat, l))
 			return (1);
 	}
 	return (0);
@@ -314,7 +314,7 @@ term_expect_text(struct process *pp,
 		VTIM_sleep(0.1);
 	if (x < 0 || x > pp->ncol)
 		vtc_fatal(pp->vl, "XXX %d ncol %d", x, pp->ncol);
-	l = strlen(pat);
+	l = vstrlen(pat);
 	if (x + l - 1 > pp->ncol)
 		vtc_fatal(pp->vl, "XXX %d ncol %d", x + l - 1, pp->ncol);
 	PTOK(pthread_mutex_lock(&pp->mtx));
@@ -833,13 +833,13 @@ process_kill(struct process *p, const char *sig)
 	if (pid <= 0)
 		vtc_fatal(p->vl, "Cannot signal a non-running process");
 
-	if (!strcmp(sig, "TERM"))
+	if (!vstrcmp(sig, "TERM"))
 		j = SIGTERM;
-	else if (!strcmp(sig, "INT"))
+	else if (!vstrcmp(sig, "INT"))
 		j = SIGINT;
-	else if (!strcmp(sig, "KILL"))
+	else if (!vstrcmp(sig, "KILL"))
 		j = SIGKILL;
-	else if (!strcmp(sig, "HUP"))
+	else if (!vstrcmp(sig, "HUP"))
 		j = SIGHUP;
 	else if (*sig == '-')
 		j = strtoul(sig + 1, NULL, 10);
@@ -867,7 +867,7 @@ process_write(const struct process *p, const char *text)
 	if (!p->hasthread)
 		vtc_fatal(p->vl, "Cannot write to a non-running process");
 
-	len = strlen(text);
+	len = vstrlen(text);
 	vtc_log(p->vl, 4, "Writing %d bytes", len);
 	r = write(p->fd_term, text, len);
 	if (r != len)
@@ -1062,12 +1062,12 @@ cmd_process(CMD_ARGS)
 		return;
 	}
 
-	AZ(strcmp(av[0], "process"));
+	AZ(vstrcmp(av[0], "process"));
 	av++;
 
 	VTC_CHECK_NAME(vl, av[0], "Process", 'p');
 	VTAILQ_FOREACH(p, &processes, list)
-		if (!strcmp(p->name, av[0]))
+		if (!vstrcmp(p->name, av[0]))
 			break;
 	if (p == NULL)
 		p = process_new(av[0]);
@@ -1081,64 +1081,64 @@ cmd_process(CMD_ARGS)
 		if (vtc_error)
 			break;
 
-		if (!strcmp(*av, "-allow-core")) {
+		if (!vstrcmp(*av, "-allow-core")) {
 			p->allow_core = 1;
 			continue;
 		}
-		if (!strcmp(*av, "-close")) {
+		if (!vstrcmp(*av, "-close")) {
 			process_close(p);
 			continue;
 		}
-		if (!strcmp(*av, "-dump")) {
+		if (!vstrcmp(*av, "-dump")) {
 			if (p->hasthread)
 				vtc_fatal(p->vl,
 				    "Cannot dump a running process");
 			p->log = 2;
 			continue;
 		}
-		if (!strcmp(*av, "-expect-exit")) {
+		if (!vstrcmp(*av, "-expect-exit")) {
 			p->expect_exit = strtoul(av[1], NULL, 0);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-expect-signal")) {
+		if (!vstrcmp(*av, "-expect-signal")) {
 			p->expect_signal = strtoul(av[1], NULL, 0);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-hexdump")) {
+		if (!vstrcmp(*av, "-hexdump")) {
 			if (p->hasthread)
 				vtc_fatal(p->vl,
 				    "Cannot dump a running process");
 			p->log = 3;
 			continue;
 		}
-		if (!strcmp(*av, "-key")) {
-			if (!strcmp(av[1], "NPAGE"))
+		if (!vstrcmp(*av, "-key")) {
+			if (!vstrcmp(av[1], "NPAGE"))
 				process_write(p, "\x1b\x5b\x36\x7e");
-			else if (!strcmp(av[1], "PPAGE"))
+			else if (!vstrcmp(av[1], "PPAGE"))
 				process_write(p, "\x1b\x5b\x35\x7e");
-			else if (!strcmp(av[1], "HOME"))
+			else if (!vstrcmp(av[1], "HOME"))
 				process_write(p, "\x1b\x4f\x48");
-			else if (!strcmp(av[1], "END"))
+			else if (!vstrcmp(av[1], "END"))
 				process_write(p, "\x1b\x4f\x46");
 			else
 				vtc_fatal(p->vl, "Unknown key %s", av[1]);
 			continue;
 		}
-		if (!strcmp(*av, "-kill")) {
+		if (!vstrcmp(*av, "-kill")) {
 			process_kill(p, av[1]);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-log")) {
+		if (!vstrcmp(*av, "-log")) {
 			if (p->hasthread)
 				vtc_fatal(p->vl,
 				    "Cannot log a running process");
 			p->log = 1;
 			continue;
 		}
-		if (!strcmp(*av, "-need-bytes")) {
+		if (!vstrcmp(*av, "-need-bytes")) {
 			u = strtoumax(av[1], NULL, 0);
 			if (av[1][0] == '+')
 				u += bsnap;
@@ -1152,16 +1152,16 @@ cmd_process(CMD_ARGS)
 			} while(v < u);
 			continue;
 		}
-		if (!strcmp(*av, "-run")) {
+		if (!vstrcmp(*av, "-run")) {
 			process_start(p);
 			process_wait(p);
 			continue;
 		}
-		if (!strcmp(*av, "-ansi-response")) {
+		if (!vstrcmp(*av, "-ansi-response")) {
 			p->ansi_response = 1;
 			continue;
 		}
-		if (!strcmp(*av, "-expect-text")) {
+		if (!vstrcmp(*av, "-expect-text")) {
 			ARGN(vl, av, 1);
 			ARGN(vl, av, 2);
 			ARGN(vl, av, 3);
@@ -1169,14 +1169,14 @@ cmd_process(CMD_ARGS)
 			av += 3;
 			continue;
 		}
-		if (!strcmp(*av, "-expect-cursor")) {
+		if (!vstrcmp(*av, "-expect-cursor")) {
 			ARGN(vl, av, 1);
 			ARGN(vl, av, 2);
 			term_expect_cursor(p, av[1], av[2]);
 			av += 2;
 			continue;
 		}
-		if (!strcmp(*av, "-match-text")) {
+		if (!vstrcmp(*av, "-match-text")) {
 			ARGN(vl, av, 1);
 			ARGN(vl, av, 2);
 			ARGN(vl, av, 3);
@@ -1184,27 +1184,27 @@ cmd_process(CMD_ARGS)
 			av += 3;
 			continue;
 		}
-		if (!strcmp(*av, "-screen_dump") ||
-		    !strcmp(*av, "-screen-dump")) {
+		if (!vstrcmp(*av, "-screen_dump") ||
+		    !vstrcmp(*av, "-screen-dump")) {
 			term_screen_dump(p);
 			continue;
 		}
-		if (!strcmp(*av, "-start")) {
+		if (!vstrcmp(*av, "-start")) {
 			// Clear the "screen"
 			teken_input(p->tek, "\r\n\x1b[H\x1b[2J", 9);
 			process_start(p);
 			continue;
 		}
-		if (!strcmp(*av, "-stop")) {
+		if (!vstrcmp(*av, "-stop")) {
 			process_kill(p, "TERM");
 			sleep(1);
 			continue;
 		}
-		if (!strcmp(*av, "-wait")) {
+		if (!vstrcmp(*av, "-wait")) {
 			process_wait(p);
 			continue;
 		}
-		if (!strcmp(*av, "-winsz")) {
+		if (!vstrcmp(*av, "-winsz")) {
 			lin = atoi(av[1]);
 			assert(lin > 1);
 			col = atoi(av[2]);
@@ -1216,17 +1216,17 @@ cmd_process(CMD_ARGS)
 			process_winsz(p, p->fd_term);
 			continue;
 		}
-		if (!strcmp(*av, "-write")) {
+		if (!vstrcmp(*av, "-write")) {
 			process_write(p, av[1]);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-writehex")) {
+		if (!vstrcmp(*av, "-writehex")) {
 			process_write_hex(p, av[1]);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-writeln")) {
+		if (!vstrcmp(*av, "-writeln")) {
 			process_write(p, av[1]);
 			process_write(p, "\n");
 			av++;

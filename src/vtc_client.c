@@ -360,12 +360,12 @@ cmd_client(CMD_ARGS)
 		return;
 	}
 
-	AZ(strcmp(av[0], "client"));
+	AZ(vstrcmp(av[0], "client"));
 	av++;
 
 	VTC_CHECK_NAME(vl, av[0], "Client", 'c');
 	VTAILQ_FOREACH(c, &clients, list)
-		if (!strcmp(c->name, av[0]))
+		if (!vstrcmp(c->name, av[0]))
 			break;
 	if (c == NULL)
 		c = client_new(av[0]);
@@ -375,7 +375,7 @@ cmd_client(CMD_ARGS)
 		if (vtc_error)
 			break;
 
-		if (!strcmp(*av, "-wait")) {
+		if (!vstrcmp(*av, "-wait")) {
 			client_wait(c);
 			continue;
 		}
@@ -388,28 +388,28 @@ cmd_client(CMD_ARGS)
 		if (Sess_GetOpt(c->vsp, &av))
 			continue;
 
-		if (!strcmp(*av, "-connect")) {
+		if (!vstrcmp(*av, "-connect")) {
 			bprintf(c->connect, "%s", av[1]);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-proxy1")) {
+		if (!vstrcmp(*av, "-proxy1")) {
 			REPLACE(c->proxy_spec, av[1]);
 			c->proxy_version = 1;
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-proxy2")) {
+		if (!vstrcmp(*av, "-proxy2")) {
 			REPLACE(c->proxy_spec, av[1]);
 			c->proxy_version = 2;
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-start")) {
+		if (!vstrcmp(*av, "-start")) {
 			client_start(c);
 			continue;
 		}
-		if (!strcmp(*av, "-run")) {
+		if (!vstrcmp(*av, "-run")) {
 			client_run(c);
 			continue;
 		}

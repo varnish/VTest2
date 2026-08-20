@@ -104,7 +104,7 @@ get_syslog_level(struct vtclog *vl, const char *lvl)
 	int i;
 
 	for (i = 0; syslog_levels[i]; i++)
-		if (!strcmp(lvl, syslog_levels[i]))
+		if (!vstrcmp(lvl, syslog_levels[i]))
 			return (i);
 	vtc_fatal(vl, "wrong syslog level '%s'\n", lvl);
 }
@@ -256,7 +256,7 @@ cmd_syslog_expect(CMD_ARGS)
 
 	(void)vl;
 	CAST_OBJ_NOTNULL(s, priv, SYSLOG_SRV_MAGIC);
-	AZ(strcmp(av[0], "expect"));
+	AZ(vstrcmp(av[0], "expect"));
 	av++;
 
 	cmp = av[0];
@@ -265,7 +265,7 @@ cmd_syslog_expect(CMD_ARGS)
 	AN(spec);
 	ARGZ(vl, av, 2);
 
-	assert(!strcmp(cmp, "~") || !strcmp(cmp, "!~"));
+	assert(!vstrcmp(cmp, "~") || !vstrcmp(cmp, "!~"));
 
 	vre = VRE_compile(spec, 0, &error, &erroroffset, 1);
 	if (vre == NULL) {
@@ -296,7 +296,7 @@ cmd_syslog_recv(CMD_ARGS)
 
 	CAST_OBJ_NOTNULL(s, priv, SYSLOG_SRV_MAGIC);
 	(void)vl;
-	AZ(strcmp(av[0], "recv"));
+	AZ(vstrcmp(av[0], "recv"));
 	av++;
 	if (av[0] == NULL)
 		lvl = s->lvl;
@@ -449,12 +449,12 @@ cmd_syslog(CMD_ARGS)
 		return;
 	}
 
-	AZ(strcmp(av[0], "syslog"));
+	AZ(vstrcmp(av[0], "syslog"));
 	av++;
 
 	PTOK(pthread_mutex_lock(&syslog_mtx));
 	VTAILQ_FOREACH(s, &syslogs, list)
-		if (!strcmp(s->name, av[0]))
+		if (!vstrcmp(s->name, av[0]))
 			break;
 	PTOK(pthread_mutex_unlock(&syslog_mtx));
 	if (s == NULL)
@@ -465,14 +465,14 @@ cmd_syslog(CMD_ARGS)
 	for (; *av != NULL; av++) {
 		if (vtc_error)
 			break;
-		if (!strcmp(*av, "-wait")) {
+		if (!vstrcmp(*av, "-wait")) {
 			if (!s->run)
 				vtc_fatal(s->vl, "Syslog server not -started");
 			syslog_wait(s);
 			continue;
 		}
 
-		if (!strcmp(*av, "-stop")) {
+		if (!vstrcmp(*av, "-stop")) {
 			syslog_stop(s);
 			continue;
 		}
@@ -486,26 +486,26 @@ cmd_syslog(CMD_ARGS)
 			syslog_wait(s);
 
 		AZ(s->run);
-		if (!strcmp(*av, "-repeat")) {
+		if (!vstrcmp(*av, "-repeat")) {
 			ARGN(vl, av, 1);
 			s->repeat = atoi(av[1]);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-bind")) {
+		if (!vstrcmp(*av, "-bind")) {
 			ARGN(vl, av, 1);
 			bprintf(s->bind, "%s", av[1]);
 			av++;
 			syslog_bind(s);
 			continue;
 		}
-		if (!strcmp(*av, "-level")) {
+		if (!vstrcmp(*av, "-level")) {
 			ARGN(vl, av, 1);
 			s->lvl = get_syslog_level(vl, av[1]);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-start")) {
+		if (!vstrcmp(*av, "-start")) {
 			syslog_start(s);
 			continue;
 		}

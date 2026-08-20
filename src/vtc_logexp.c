@@ -656,21 +656,21 @@ cmd_logexp_common(struct logexp *le, struct vtclog *vl,
 	struct logexp_test *test;
 	char *end, errbuf[VRE_ERROR_LEN];
 
-	if (!strcmp(av[2], "*"))
+	if (!vstrcmp(av[2], "*"))
 		vxid = LE_ANY;
-	else if (!strcmp(av[2], "="))
+	else if (!vstrcmp(av[2], "="))
 		vxid = LE_LAST;
 	else {
 		vxid = strtoll(av[2], &end, 10);
 		if (*end != '\0' || vxid < 0)
 			vtc_fatal(vl, "Not a positive integer: '%s'", av[2]);
 	}
-	if (!strcmp(av[3], "*"))
+	if (!vstrcmp(av[3], "*"))
 		tag = LE_ANY;
-	else if (!strcmp(av[3], "="))
+	else if (!vstrcmp(av[3], "="))
 		tag = LE_LAST;
 	else {
-		tag = VSL_Name2Tag(av[3], strlen(av[3]));
+		tag = VSL_Name2Tag(av[3], vstrlen(av[3]));
 		if (tag < 0)
 			vtc_fatal(vl, "Unknown tag name: '%s'", av[3]);
 	}
@@ -716,9 +716,9 @@ cmd_logexp_expect(CMD_ARGS)
 	if (av[4] != NULL && av[5] != NULL)
 		vtc_fatal(vl, "Syntax error");
 
-	if (!strcmp(av[1], "*"))
+	if (!vstrcmp(av[1], "*"))
 		skip_max = LE_ANY;
-	else if (!strcmp(av[1], "?"))
+	else if (!vstrcmp(av[1], "?"))
 		skip_max = LE_ALT;
 	else {
 		skip_max = (int)strtol(av[1], &end, 10);
@@ -739,7 +739,7 @@ cmd_logexp_fail(CMD_ARGS)
 	if (av[1] == NULL)
 		vtc_fatal(vl, "Syntax error");
 
-	if (!strcmp(av[1], "clear")) {
+	if (!vstrcmp(av[1], "clear")) {
 		ALLOC_OBJ(test, LOGEXP_TEST_MAGIC);
 		AN(test);
 		test->skip_max = LE_CLEAR;
@@ -753,7 +753,7 @@ cmd_logexp_fail(CMD_ARGS)
 		return;
 	}
 
-	if (strcmp(av[1], "add"))
+	if (vstrcmp(av[1], "add"))
 		vtc_fatal(vl, "Unknown fail argument '%s'", av[1]);
 
 	if (av[2] == NULL || av[3] == NULL)
@@ -806,16 +806,16 @@ cmd_logexpect(CMD_ARGS)
 		return;
 	}
 
-	AZ(strcmp(av[0], "logexpect"));
+	AZ(vstrcmp(av[0], "logexpect"));
 	av++;
 
 	VTC_CHECK_NAME(vl, av[0], "Logexpect", 'l');
 	VTAILQ_FOREACH(le, &logexps, list) {
-		if (!strcmp(le->name, av[0]))
+		if (!vstrcmp(le->name, av[0]))
 			break;
 	}
 	if (le == NULL) {
-		if (strcmp(av[1], "-v") || av[2] == NULL)
+		if (vstrcmp(av[1], "-v") || av[2] == NULL)
 			vtc_fatal(vl, "new logexp lacks -v");
 		le = logexp_new(av[0], av[2]);
 		av += 2;
@@ -825,7 +825,7 @@ cmd_logexpect(CMD_ARGS)
 	for (; *av != NULL; av++) {
 		if (vtc_error)
 			break;
-		if (!strcmp(*av, "-wait")) {
+		if (!vstrcmp(*av, "-wait")) {
 			if (!le->run)
 				vtc_fatal(le->vl, "logexp not -started '%s'",
 					*av);
@@ -841,23 +841,23 @@ cmd_logexpect(CMD_ARGS)
 			logexp_wait(le);
 		AZ(le->run);
 
-		if (!strcmp(*av, "-v")) {
-			if (av[1] == NULL || strcmp(av[1], le->vname))
+		if (!vstrcmp(*av, "-v")) {
+			if (av[1] == NULL || vstrcmp(av[1], le->vname))
 				vtc_fatal(le->vl, "-v argument cannot change");
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-d")) {
+		if (!vstrcmp(*av, "-d")) {
 			if (av[1] == NULL)
 				vtc_fatal(le->vl, "Missing -d argument");
 			le->d_arg = atoi(av[1]);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-g")) {
+		if (!vstrcmp(*av, "-g")) {
 			if (av[1] == NULL)
 				vtc_fatal(le->vl, "Missing -g argument");
-			i = VSLQ_Name2Grouping(av[1], strlen(av[1]));
+			i = VSLQ_Name2Grouping(av[1], vstrlen(av[1]));
 			if (i < 0)
 				vtc_fatal(le->vl, "Unknown grouping '%s'",
 				    av[1]);
@@ -865,26 +865,26 @@ cmd_logexpect(CMD_ARGS)
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-q")) {
+		if (!vstrcmp(*av, "-q")) {
 			if (av[1] == NULL)
 				vtc_fatal(le->vl, "Missing -q argument");
 			REPLACE(le->query, av[1]);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-m")) {
+		if (!vstrcmp(*av, "-m")) {
 			le->m_arg = !le->m_arg;
 			continue;
 		}
-		if (!strcmp(*av, "-err")) {
+		if (!vstrcmp(*av, "-err")) {
 			le->err_arg = !le->err_arg;
 			continue;
 		}
-		if (!strcmp(*av, "-start")) {
+		if (!vstrcmp(*av, "-start")) {
 			logexp_start(le);
 			continue;
 		}
-		if (!strcmp(*av, "-run")) {
+		if (!vstrcmp(*av, "-run")) {
 			logexp_start(le);
 			logexp_wait(le);
 			continue;

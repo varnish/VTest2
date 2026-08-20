@@ -98,7 +98,7 @@ vtc_expect(struct vtclog *vl,
 	if (rhs == NULL)
 		rhs = "<undef>";
 
-	if (!strcmp(cmp, "~") || !strcmp(cmp, "!~")) {
+	if (!vstrcmp(cmp, "~") || !vstrcmp(cmp, "!~")) {
 		vre = VRE_compile(rhs, 0, &error, &erroroffset, 1);
 		if (vre == NULL) {
 			AN(VSB_init(vsb, errbuf, sizeof errbuf));
@@ -111,21 +111,21 @@ vtc_expect(struct vtclog *vl,
 		i = VRE_match(vre, lhs, 0, 0, NULL);
 		retval = (i >= 0 && *cmp == '~') || (i < 0 && *cmp == '!');
 		VRE_free(&vre);
-	} else if (!strcmp(cmp, "==")) {
-		retval = strcmp(lhs, rhs) == 0;
-	} else if (!strcmp(cmp, "!=")) {
-		retval = strcmp(lhs, rhs) != 0;
-	} else if (!strcmp(cmp, "-lt")) {
+	} else if (!vstrcmp(cmp, "==")) {
+		retval = vstrcmp(lhs, rhs) == 0;
+	} else if (!vstrcmp(cmp, "!=")) {
+		retval = vstrcmp(lhs, rhs) != 0;
+	} else if (!vstrcmp(cmp, "-lt")) {
 		retval = strtoul(lhs, NULL, 0) < strtoul(rhs, NULL, 0);
-	} else if (!strcmp(cmp, "-le")) {
+	} else if (!vstrcmp(cmp, "-le")) {
 		retval = strtoul(lhs, NULL, 0) <= strtoul(rhs, NULL, 0);
-	} else if (!strcmp(cmp, "-eq")) {
+	} else if (!vstrcmp(cmp, "-eq")) {
 		retval = strtoul(lhs, NULL, 0) == strtoul(rhs, NULL, 0);
-	} else if (!strcmp(cmp, "-ne")) {
+	} else if (!vstrcmp(cmp, "-ne")) {
 		retval = strtoul(lhs, NULL, 0) != strtoul(rhs, NULL, 0);
-	} else if (!strcmp(cmp, "-ge")) {
+	} else if (!vstrcmp(cmp, "-ge")) {
 		retval = strtoul(lhs, NULL, 0) >= strtoul(rhs, NULL, 0);
-	} else if (!strcmp(cmp, "-gt")) {
+	} else if (!vstrcmp(cmp, "-gt")) {
 		retval = strtoul(lhs, NULL, 0) > strtoul(rhs, NULL, 0);
 	} else if (j) {
 		// fail inequality comparisons if either side is undef'ed
@@ -133,13 +133,13 @@ vtc_expect(struct vtclog *vl,
 	} else {
 		fl = VNUM(lhs);
 		fr = VNUM(rhs);
-		if (!strcmp(cmp, "<"))
+		if (!vstrcmp(cmp, "<"))
 			retval = isless(fl, fr);
-		else if (!strcmp(cmp, ">"))
+		else if (!vstrcmp(cmp, ">"))
 			retval = isgreater(fl, fr);
-		else if (!strcmp(cmp, "<="))
+		else if (!vstrcmp(cmp, "<="))
 			retval = islessequal(fl, fr);
-		else if (!strcmp(cmp, ">="))
+		else if (!vstrcmp(cmp, ">="))
 			retval = isgreaterequal(fl, fr);
 	}
 
