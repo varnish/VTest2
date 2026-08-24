@@ -614,7 +614,7 @@ parse_string(struct vtclog *vl, void *priv, const char *spec)
 				parse_string(vl, priv, VSB_data(token_exp));
 				VSB_destroy(&token_exp);
 			}
-			macro_undef(vl, NULL, "n");
+			macro_def(vl, NULL, "n", "${n}");
 			continue;
 		}
 
