@@ -1368,6 +1368,61 @@ cmd_http_send_n(CMD_ARGS)
 	}
 }
 
+/* SECTION: client-server.spec.send_split
+ *
+ * send_split [-delay <usec>] OFFSET STRING
+ *
+ *         Push STRING on the connection split in two writes as per the OFFSET
+ *         with a delay of usec microseconds (default: 200 * 1000 = 200ms)
+ *         after both writes. This allows to "sweep test" handling of data
+ *         received with different boundaries between I/Os
+ */
+
+static void
+cmd_http_send_split(CMD_ARGS)
+{
+	struct http *hp;
+	useconds_t us = 200 * 1000;
+	int i, l, ll, s;
+	char *p;
+
+	(void)vl;
+	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
+
+	AZ(vstrcmp(av[0], "send_split"));
+	if (av[1] != NULL && !vstrcmp(av[1], "-delay")) {
+		us = strtoul(av[2], &p, 0);
+		if (*p != '\0')
+			vtc_fatal(hp->vl, "send_split bad -delay argument");
+		av += 2;
+	}
+	ARGN(vl, av, 1);
+	ARGN(vl, av, 2);
+	ARGZ(vl, av, 3);
+	s = atoi(av[1]);
+	l = (int)vstrlen(av[2]);
+	AN(l);
+	if (s < 0)
+		vtc_fatal(hp->vl, "send_split offset %d < 0", s);
+	if (s > l)
+		vtc_fatal(hp->vl, "send_split offset %d >= %d", s, l);
+
+	ll = s;
+	vtc_dump(hp->vl, 4, "send_split", av[2], s);
+	i = write(*hp->sess->fd, av[2], s);
+	usleep(us);
+	if (i == ll) {
+		ll = l - s;
+		vtc_dump(hp->vl, 4, "send_split", av[2] + s, ll);
+		i = write(*hp->sess->fd, av[2] + s, ll);
+		usleep(us);
+	}
+	if (i != ll) {
+		vtc_log(hp->vl, hp->fatal, "Write error in http_send(): %s",
+		    strerror(errno));
+	}
+}
+
 /* SECTION: client-server.spec.send_urgent
  *
  * send_urgent STRING
@@ -1840,6 +1895,7 @@ const struct cmds http_cmds[] = {
 	CMD_HTTP(recv)
 	CMD_HTTP(send)
 	CMD_HTTP(send_n)
+	CMD_HTTP(send_split)
 	CMD_HTTP(send_urgent)
 	CMD_HTTP(sendhex)
 	CMD_HTTP(shutdown)

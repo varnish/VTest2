@@ -1,0 +1,20 @@
+vtest "-repeat + send_split"
+
+server s1 -repeat 52 -keepalive {
+	rxreq
+	expect req.method == "PUT"
+	expect req.url == "/"
+	expect req.proto == "HTTP/1.1"
+	expect req.http.Content-Length == 3
+	expect req.http.foo == "bar"
+	expect req.body == "abc"
+} -start
+
+client c1 -connect "${s1_sock}" {
+	loop 50 {
+		send_split -delay 1000 ${n} "PUT / HTTP/1.1\r\nContent-Length: 3\r\nfoo: bar\r\n\r\nabc"
+	}
+	loop 2 {
+		send_split ${n} "PUT / HTTP/1.1\r\nContent-Length: 3\r\nfoo: bar\r\n\r\nabc"
+	}
+} -run
