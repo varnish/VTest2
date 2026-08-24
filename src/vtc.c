@@ -600,14 +600,21 @@ parse_string(struct vtclog *vl, void *priv, const char *spec)
  *         Process STRING as a specification, NUMBER times.
  *
  * This works inside all specification strings
+ *
+ * The special macro ${n} is expanded in STRING to the
+ * the iteration [1…NUMBER].
  */
 
 		if (!vstrcmp(token_s[0], "loop")) {
 			n = strtoul(token_s[1], NULL, 0);
 			for (m = 0; m < n && !vtc_error && !vtc_stop; m++) {
 				vtc_log(vl, 4, "Loop #%u", m);
-				parse_string(vl, priv, token_s[2]);
+				macro_def(vl, NULL, "n", "%d", m + 1);
+				token_exp = macro_expand(vl, token_s[2]);
+				parse_string(vl, priv, VSB_data(token_exp));
+				VSB_destroy(&token_exp);
 			}
+			macro_undef(vl, NULL, "n");
 			continue;
 		}
 
@@ -769,6 +776,8 @@ exec_file(const char *fn, const char *script, const char *tmpdir,
 	AZ(fclose(f));
 
 	vtc_stop = 0;
+
+	macro_def(vltop, NULL, "n", "${n}");
 
 	vtc_thread = pthread_self();
 	parse_string(vltop, NULL, script);
