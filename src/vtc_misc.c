@@ -528,6 +528,8 @@ abstract_uds_works(void)
  *        Varnish was built with a sanitizer.
  * workspace_emulator
  *        Varnish was built with its workspace emulator.
+ * witness
+ *        A compile flag was present indicating the lock witness.
  * abstract_uds
  *        Creation of an abstract unix domain socket succeeded.
  * disable_aslr
@@ -583,6 +585,12 @@ static const unsigned sanitizer = 0;
 static const unsigned workspace_emulator = 1;
 #else
 static const unsigned workspace_emulator = 0;
+#endif
+
+#if ENABLE_WITNESS
+static const unsigned witness = 1;
+#else
+static const unsigned witness = 0;
 #endif
 
 #if WITH_PERSISTENT_STORAGE
@@ -647,6 +655,7 @@ cmd_feature(CMD_ARGS)
 		FEATURE("ubsan", ubsan);
 		FEATURE("sanitizer", sanitizer);
 		FEATURE("workspace_emulator", workspace_emulator);
+		FEATURE("witness", witness);
 		FEATURE("abstract_uds", abstract_uds_works());
 		FEATURE("tls", 1);
 #if defined(TLS1_3_VERSION) || OPENSSL_VERSION_NUMBER >= 0x10101000L
