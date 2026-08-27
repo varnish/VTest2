@@ -508,7 +508,7 @@ abstract_uds_works(void)
  *        Do not fail the test if a string of the form ${...} is not
  *        recognized as a macro.
  * persistent_storage
- *        Varnish was built with the deprecated persistent storage.
+ *        A compile flag was present indicating the deprecated persistent storage.
  * tls_client
  *        Varnish was built with client-side TLS support
  * tls_1_3
@@ -519,19 +519,19 @@ abstract_uds_works(void)
  *        The TLS library staples OCSP responses verbatim, allowing
  *        tests to staple arbitrary data (OpenSSL < 3.6)
  * coverage
- *        Varnish was built with code coverage enabled.
+ *        A compile flag was present indicating code coverage enabled.
  * asan
- *        Varnish was built with the address sanitizer.
+ *        A compile flag was present indicating the address sanitizer.
  * msan
- *        Varnish was built with the memory sanitizer.
+ *        A compile flag was present indicating the memory sanitizer.
  * tsan
- *        Varnish was built with the thread sanitizer.
+ *        A compile flag was present indicating the thread sanitizer.
  * ubsan
- *        Varnish was built with the undefined behavior sanitizer.
+ *        A compile flag was present indicating the undefined behavior sanitizer.
  * sanitizer
- *        Varnish was built with a sanitizer.
+ *        A compile flag was present indicating a sanitizer.
  * workspace_emulator
- *        Varnish was built with its workspace emulator.
+ *        A compile flag was present indicating the workspace emulator.
  * witness
  *        A compile flag was present indicating the lock witness.
  * abstract_uds
