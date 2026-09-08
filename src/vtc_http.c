@@ -242,7 +242,7 @@ http_find_header(char * const *hh, const char *hdr)
 	int n, l;
 	char *r;
 
-	l = strlen(hdr);
+	l = vstrlen(hdr);
 
 	for (n = 3; hh[n] != NULL; n++) {
 		if (strncasecmp(hdr, hh[n], l) || hh[n][l] != ':')
@@ -263,7 +263,7 @@ http_count_header(char * const *hh, const char *hdr)
 {
 	int n, l, r = 0;
 
-	l = strlen(hdr);
+	l = vstrlen(hdr);
 
 	for (n = 3; hh[n] != NULL; n++) {
 		if (strncasecmp(hdr, hh[n], l) || hh[n][l] != ':')
@@ -314,41 +314,41 @@ static const char *
 cmd_var_resolve(struct http *hp, char *spec)
 {
 	char **hh, *hdr;
-	if (!strcmp(spec, "remote.ip"))
+	if (!vstrcmp(spec, "remote.ip"))
 		return (hp->rem_ip);
-	if (!strcmp(spec, "remote.port"))
+	if (!vstrcmp(spec, "remote.port"))
 		return (hp->rem_port);
-	if (!strcmp(spec, "remote.path"))
+	if (!vstrcmp(spec, "remote.path"))
 		return (hp->rem_path);
-	if (!strcmp(spec, "req.method"))
+	if (!vstrcmp(spec, "req.method"))
 		return (hp->req[0]);
-	if (!strcmp(spec, "req.url"))
+	if (!vstrcmp(spec, "req.url"))
 		return (hp->req[1]);
-	if (!strcmp(spec, "req.proto"))
+	if (!vstrcmp(spec, "req.proto"))
 		return (hp->req[2]);
-	if (!strcmp(spec, "resp.proto"))
+	if (!vstrcmp(spec, "resp.proto"))
 		return (hp->resp[0]);
-	if (!strcmp(spec, "resp.status"))
+	if (!vstrcmp(spec, "resp.status"))
 		return (hp->resp[1]);
-	if (!strcmp(spec, "resp.reason"))
+	if (!vstrcmp(spec, "resp.reason"))
 		return (hp->resp[2]);
-	if (!strcmp(spec, "resp.chunklen"))
+	if (!vstrcmp(spec, "resp.chunklen"))
 		return (hp->chunklen);
-	if (!strcmp(spec, "req.bodylen"))
+	if (!vstrcmp(spec, "req.bodylen"))
 		return (hp->bodylen);
-	if (!strcmp(spec, "req.body"))
+	if (!vstrcmp(spec, "req.body"))
 		return (hp->body != NULL ? hp->body : spec);
-	if (!strcmp(spec, "resp.bodylen"))
+	if (!vstrcmp(spec, "resp.bodylen"))
 		return (hp->bodylen);
-	if (!strcmp(spec, "resp.body"))
+	if (!vstrcmp(spec, "resp.body"))
 		return (hp->body != NULL ? hp->body : spec);
-	if (!strncmp(spec, "req.http.", 9)) {
+	if (!vstrncmp(spec, "req.http.", 9)) {
 		hh = hp->req;
 		hdr = spec + 9;
-	} else if (!strncmp(spec, "resp.http.", 10)) {
+	} else if (!vstrncmp(spec, "resp.http.", 10)) {
 		hh = hp->resp;
 		hdr = spec + 10;
-	} else if (!strcmp(spec, "h2.state")) {
+	} else if (!vstrcmp(spec, "h2.state")) {
 		if (hp->h2)
 			return ("true");
 		else
@@ -373,7 +373,7 @@ cmd_http_expect(CMD_ARGS)
 	const char *rhs;
 
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
-	AZ(strcmp(av[0], "expect"));
+	AZ(vstrcmp(av[0], "expect"));
 	av++;
 
 	AN(av[0]);
@@ -403,9 +403,8 @@ cmd_http_expect_pattern(CMD_ARGS)
 
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
-	AZ(strcmp(av[0], "expect_pattern"));
+	AZ(vstrcmp(av[0], "expect_pattern"));
 	ARGZ(vl, av, 1);
-	av++;
 	for (p = hp->body; *p != '\0'; p++) {
 		if (*p != t)
 			vtc_fatal(hp->vl,
@@ -712,11 +711,11 @@ cmd_http_rxresp(CMD_ARGS)
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
 	ONLY_CLIENT(hp, av);
-	AZ(strcmp(av[0], "rxresp"));
+	AZ(vstrcmp(av[0], "rxresp"));
 	av++;
 
 	for (; *av != NULL; av++)
-		if (!strcmp(*av, "-no_obj"))
+		if (!vstrcmp(*av, "-no_obj"))
 			has_obj = 0;
 		else
 			vtc_fatal(hp->vl,
@@ -732,7 +731,7 @@ cmd_http_rxresp(CMD_ARGS)
 		return;
 	if (hp->head_method)
 		return;
-	if (!strcmp(hp->resp[1], "200"))
+	if (!vstrcmp(hp->resp[1], "200"))
 		http_swallow_body(hp, hp->resp, 1, 0);
 	else
 		http_swallow_body(hp, hp->resp, 0, 0);
@@ -753,7 +752,7 @@ cmd_http_rxresphdrs(CMD_ARGS)
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
 	ONLY_CLIENT(hp, av);
-	AZ(strcmp(av[0], "rxresphdrs"));
+	AZ(vstrcmp(av[0], "rxresphdrs"));
 	av++;
 
 	for (; *av != NULL; av++)
@@ -800,13 +799,13 @@ http_tx_parse_args(char * const *av, struct vtclog *vl, struct http *hp,
 	nullbody = body;
 
 	for (; *av != NULL; av++) {
-		if (!strcmp(*av, "-nolen")) {
+		if (!vstrcmp(*av, "-nolen")) {
 			nolen = 1;
-		} else if (!strcmp(*av, "-nohost")) {
+		} else if (!vstrcmp(*av, "-nohost")) {
 			nohost = 1;
-		} else if (!strcmp(*av, "-nodate")) {
+		} else if (!vstrcmp(*av, "-nodate")) {
 			nodate = 1;
-		} else if (!strcmp(*av, "-hdr")) {
+		} else if (!vstrcmp(*av, "-hdr")) {
 			if (!strncasecmp(av[1], "Content-Length:", 15) ||
 			    !strncasecmp(av[1], "Transfer-Encoding:", 18))
 				nolen = 1;
@@ -820,7 +819,7 @@ http_tx_parse_args(char * const *av, struct vtclog *vl, struct http *hp,
 				nouseragent = 1;
 			VSB_printf(hp->vsb, "%s%s", av[1], nl);
 			av++;
-		} else if (!strcmp(*av, "-hdrlen")) {
+		} else if (!vstrcmp(*av, "-hdrlen")) {
 			VSB_printf(hp->vsb, "%s: ", av[1]);
 			l = atoi(av[2]);
 			while (l-- > 0)
@@ -831,13 +830,13 @@ http_tx_parse_args(char * const *av, struct vtclog *vl, struct http *hp,
 			break;
 	}
 	for (; *av != NULL; av++) {
-		if (!strcmp(*av, "-body")) {
+		if (!vstrcmp(*av, "-body")) {
 			assert(body == nullbody);
 			REPLACE(body, av[1]);
 
 			AN(body);
 			av++;
-			bodylen = strlen(body);
+			bodylen = vstrlen(body);
 			for (b = body; *b != '\0'; b++) {
 				if (*b == '\\' && b[1] == '0') {
 					*b = '\0';
@@ -848,7 +847,7 @@ http_tx_parse_args(char * const *av, struct vtclog *vl, struct http *hp,
 					bodylen--;
 				}
 			}
-		} else if (!strcmp(*av, "-bodyfrom")) {
+		} else if (!vstrcmp(*av, "-bodyfrom")) {
 			assert(body == nullbody);
 			free(body);
 			body = VFIL_readfile(NULL, av[1], &len);
@@ -856,13 +855,13 @@ http_tx_parse_args(char * const *av, struct vtclog *vl, struct http *hp,
 			assert(len < INT_MAX);
 			bodylen = len;
 			av++;
-		} else if (!strcmp(*av, "-bodylen")) {
+		} else if (!vstrcmp(*av, "-bodylen")) {
 			assert(body == nullbody);
 			free(body);
 			body = synth_body(av[1], 0);
-			bodylen = strlen(body);
+			bodylen = vstrlen(body);
 			av++;
-		} else if (!strncmp(*av, "-gzip", 5)) {
+		} else if (!vstrncmp(*av, "-gzip", 5)) {
 			l = vtc_gzip_cmd(hp, av, &body, &bodylen);
 			if (l == 0)
 				break;
@@ -998,23 +997,23 @@ cmd_http_txresp(CMD_ARGS)
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
 	ONLY_SERVER(hp, av);
-	AZ(strcmp(av[0], "txresp"));
+	AZ(vstrcmp(av[0], "txresp"));
 	av++;
 
 	VSB_clear(hp->vsb);
 
 	for (; *av != NULL; av++) {
-		if (!strcmp(*av, "-proto")) {
+		if (!vstrcmp(*av, "-proto")) {
 			proto = av[1];
 			av++;
-		} else if (!strcmp(*av, "-status")) {
+		} else if (!vstrcmp(*av, "-status")) {
 			status = av[1];
 			av++;
-		} else if (!strcmp(*av, "-reason")) {
+		} else if (!vstrcmp(*av, "-reason")) {
 			reason = av[1];
 			av++;
 			continue;
-		} else if (!strcmp(*av, "-noserver")) {
+		} else if (!vstrcmp(*av, "-noserver")) {
 			noserver = 1;
 			continue;
 		} else
@@ -1044,11 +1043,11 @@ cmd_http_upgrade(CMD_ARGS)
 	AN(hp->sfd);
 
 	h = http_find_header(hp->req, "Upgrade");
-	if (!h || strcmp(h, "h2c"))
+	if (!h || vstrcmp(h, "h2c"))
 		vtc_fatal(vl, "Req misses \"Upgrade: h2c\" header");
 
 	h = http_find_header(hp->req, "Connection");
-	if (!h || strcmp(h, "Upgrade, HTTP2-Settings"))
+	if (!h || vstrcmp(h, "Upgrade, HTTP2-Settings"))
 		vtc_fatal(vl, "Req misses \"Connection: "
 			"Upgrade, HTTP2-Settings\" header");
 
@@ -1093,7 +1092,7 @@ cmd_http_rxreq(CMD_ARGS)
 
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
 	ONLY_SERVER(hp, av);
-	AZ(strcmp(av[0], "rxreq"));
+	AZ(vstrcmp(av[0], "rxreq"));
 	av++;
 
 	for (; *av != NULL; av++)
@@ -1119,7 +1118,7 @@ cmd_http_rxreqhdrs(CMD_ARGS)
 
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
-	AZ(strcmp(av[0], "rxreqhdrs"));
+	AZ(vstrcmp(av[0], "rxreqhdrs"));
 	av++;
 
 	for (; *av != NULL; av++)
@@ -1144,7 +1143,7 @@ cmd_http_rxreqbody(CMD_ARGS)
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
 	ONLY_SERVER(hp, av);
-	AZ(strcmp(av[0], "rxreqbody"));
+	AZ(vstrcmp(av[0], "rxreqbody"));
 	av++;
 
 	for (; *av != NULL; av++)
@@ -1170,11 +1169,11 @@ cmd_http_rxrespbody(CMD_ARGS)
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
 	ONLY_CLIENT(hp, av);
-	AZ(strcmp(av[0], "rxrespbody"));
+	AZ(vstrcmp(av[0], "rxrespbody"));
 	av++;
 
 	for (; *av != NULL; av++)
-		if (!strcmp(*av, "-max")) {
+		if (!vstrcmp(*av, "-max")) {
 			max = atoi(av[1]);
 			av++;
 		} else
@@ -1228,28 +1227,28 @@ cmd_http_txreq(CMD_ARGS)
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
 	ONLY_CLIENT(hp, av);
-	AZ(strcmp(av[0], "txreq"));
+	AZ(vstrcmp(av[0], "txreq"));
 	av++;
 
 	VSB_clear(hp->vsb);
 
 	hp->head_method = 0;
 	for (; *av != NULL; av++) {
-		if (!strcmp(*av, "-url")) {
+		if (!vstrcmp(*av, "-url")) {
 			url = av[1];
 			av++;
-		} else if (!strcmp(*av, "-proto")) {
+		} else if (!vstrcmp(*av, "-proto")) {
 			proto = av[1];
 			av++;
-		} else if (!strcmp(*av, "-method") ||
-		    !strcmp(*av, "-req")) {
+		} else if (!vstrcmp(*av, "-method") ||
+			   !vstrcmp(*av, "-req")) {
 			req = av[1];
-			hp->head_method = !strcmp(av[1], "HEAD") ;
+			hp->head_method = !vstrcmp(av[1], "HEAD");
 			av++;
-		} else if (!hp->sfd && !strcmp(*av, "-up")) {
+		} else if (!hp->sfd && !vstrcmp(*av, "-up")) {
 			up = av[1];
 			av++;
-		} else if (!strcmp(*av, "-nouseragent")) {
+		} else if (!vstrcmp(*av, "-nouseragent")) {
 			nouseragent = 1;
 		} else
 			break;
@@ -1261,7 +1260,7 @@ cmd_http_txreq(CMD_ARGS)
 				"Upgrade: h2c%s"
 				"HTTP2-Settings: %s%s", nl, nl, up, nl);
 
-	nohost = strcmp(proto, "HTTP/1.1") != 0;
+	nohost = vstrcmp(proto, "HTTP/1.1") != 0;
 	av = http_tx_parse_args(av, vl, hp, NULL, nohost, 1, 1, nouseragent);
 	if (*av != NULL)
 		vtc_fatal(hp->vl, "Unknown http txreq spec: %s\n", *av);
@@ -1334,8 +1333,8 @@ cmd_http_send(CMD_ARGS)
 	ARGN(vl, av, 1);
 	ARGZ(vl, av, 2);
 	vtc_dump(hp->vl, 4, "send", av[1], -1);
-	i = hp->so->write(hp, av[1], strlen(av[1]));
-	if (i != strlen(av[1]))
+	i = hp->so->write(hp, av[1], vstrlen(av[1]));
+	if (i != vstrlen(av[1]))
 		vtc_log(hp->vl, hp->fatal, "Write error in http_send(): %s",
 		    strerror(errno));
 }
@@ -1359,13 +1358,68 @@ cmd_http_send_n(CMD_ARGS)
 	ARGZ(vl, av, 3);
 	n = strtoul(av[1], NULL, 0);
 		vtc_dump(hp->vl, 4, "send_n", av[2], -1);
-	l = strlen(av[2]);
+	l = vstrlen(av[2]);
 	while (n--) {
 		i = hp->so->write(hp, av[2], l);
 		if (i != l)
 			vtc_log(hp->vl, hp->fatal,
 			    "Write error in http_send(): %s",
 			    strerror(errno));
+	}
+}
+
+/* SECTION: client-server.spec.send_split
+ *
+ * send_split [-delay <usec>] OFFSET STRING
+ *
+ *         Push STRING on the connection split in two writes as per the OFFSET
+ *         with a delay of usec microseconds (default: 200 * 1000 = 200ms)
+ *         after both writes. This allows to "sweep test" handling of data
+ *         received with different boundaries between I/Os
+ */
+
+static void
+cmd_http_send_split(CMD_ARGS)
+{
+	struct http *hp;
+	useconds_t us = 200 * 1000;
+	int i, l, ll, s;
+	char *p;
+
+	(void)vl;
+	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
+
+	AZ(vstrcmp(av[0], "send_split"));
+	if (av[1] != NULL && !vstrcmp(av[1], "-delay")) {
+		us = strtoul(av[2], &p, 0);
+		if (*p != '\0')
+			vtc_fatal(hp->vl, "send_split bad -delay argument");
+		av += 2;
+	}
+	ARGN(vl, av, 1);
+	ARGN(vl, av, 2);
+	ARGZ(vl, av, 3);
+	s = atoi(av[1]);
+	l = (int)vstrlen(av[2]);
+	AN(l);
+	if (s < 0)
+		vtc_fatal(hp->vl, "send_split offset %d < 0", s);
+	if (s > l)
+		vtc_fatal(hp->vl, "send_split offset %d >= %d", s, l);
+
+	ll = s;
+	vtc_dump(hp->vl, 4, "send_split", av[2], s);
+	i = write(*hp->sess->fd, av[2], s);
+	usleep(us);
+	if (i == ll) {
+		ll = l - s;
+		vtc_dump(hp->vl, 4, "send_split", av[2] + s, ll);
+		i = write(*hp->sess->fd, av[2] + s, ll);
+		usleep(us);
+	}
+	if (i != ll) {
+		vtc_log(hp->vl, hp->fatal, "Write error in http_send(): %s",
+		    strerror(errno));
 	}
 }
 
@@ -1386,8 +1440,8 @@ cmd_http_send_urgent(CMD_ARGS)
 	ARGN(vl, av, 1);
 	ARGZ(vl, av, 2);
 	vtc_dump(hp->vl, 4, "send_urgent", av[1], -1);
-	i = send(*hp->sess->fd, av[1], strlen(av[1]), MSG_OOB);
-	if (i != strlen(av[1]))
+	i = send(*hp->sess->fd, av[1], vstrlen(av[1]), MSG_OOB);
+	if (i != vstrlen(av[1]))
 		vtc_log(hp->vl, hp->fatal,
 		    "Write error in http_send_urgent(): %s", strerror(errno));
 }
@@ -1436,7 +1490,7 @@ cmd_http_chunked(CMD_ARGS)
 	ARGZ(vl, av, 2);
 	VSB_clear(hp->vsb);
 	VSB_printf(hp->vsb, "%jx%s%s%s",
-	    (uintmax_t)strlen(av[1]), nl, av[1], nl);
+	    (uintmax_t) vstrlen(av[1]), nl, av[1], nl);
 	http_write(hp, 4, "chunked");
 }
 
@@ -1624,17 +1678,17 @@ cmd_http_shutdown(CMD_ARGS)
 
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
-	AZ(strcmp(av[0], "shutdown"));
+	AZ(vstrcmp(av[0], "shutdown"));
 	av++;
 
 	while (*av != NULL) {
-		if (!strcmp(*av, "-read")) {
+		if (!vstrcmp(*av, "-read")) {
 			how = SHUT_RD;
 			av++;
-		} else if (!strcmp(*av, "-write")) {
+		} else if (!vstrcmp(*av, "-write")) {
 			how = SHUT_WR;
 			av++;
-		} else if (!strcmp(*av, "-notconn")) {
+		} else if (!vstrcmp(*av, "-notconn")) {
 			notconn = 1;
 			av++;
 		} else {
@@ -1679,10 +1733,10 @@ cmd_http_fatal(CMD_ARGS)
 
 	(void)vl;
 	ARGZ(vl, av, 1);
-	if (!strcmp(av[0], "fatal")) {
+	if (!vstrcmp(av[0], "fatal")) {
 		hp->fatal = 0;
 	} else {
-		assert(!strcmp(av[0], "non_fatal"));
+		assert(!vstrcmp(av[0], "non_fatal"));
 		hp->fatal = -1;
 	}
 }
@@ -1743,7 +1797,7 @@ cmd_http_rxpri(CMD_ARGS)
 	hp->rx_p = hp->rx_b;
 	if (!http_rxchar(hp, sizeof(PREFACE), 0))
 		vtc_fatal(vl, "Couldn't retrieve connection preface");
-	if (memcmp(hp->rx_b, PREFACE, sizeof(PREFACE)))
+	if (vmemcmp(hp->rx_b, PREFACE, sizeof(PREFACE)))
 		vtc_fatal(vl, "Received invalid preface\n");
 	start_h2(hp);
 	AN(hp->h2);
@@ -1769,7 +1823,7 @@ cmd_http_settings(CMD_ARGS)
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
 
 	for (; *av != NULL; av++) {
-		if (!strcmp(*av, "-dectbl")) {
+		if (!vstrcmp(*av, "-dectbl")) {
 			n = strtoul(av[1], &p, 0);
 			if (*p != '\0')
 				vtc_fatal(hp->vl, "-dectbl takes an integer as "
@@ -1823,7 +1877,7 @@ cmd_http_write_body(CMD_ARGS)
 	AN(av[0]);
 	ARGN(vl, av, 1);
 	ARGZ(vl, av, 2);
-	AZ(strcmp(av[0], "write_body"));
+	AZ(vstrcmp(av[0], "write_body"));
 	if (VFIL_writefile(NULL, av[1], hp->body, hp->bodyl) != 0)
 		vtc_fatal(hp->vl, "failed to write body: %s (%d)",
 		    strerror(errno), errno);
@@ -1841,6 +1895,7 @@ const struct cmds http_cmds[] = {
 	CMD_HTTP(recv)
 	CMD_HTTP(send)
 	CMD_HTTP(send_n)
+	CMD_HTTP(send_split)
 	CMD_HTTP(send_urgent)
 	CMD_HTTP(sendhex)
 	CMD_HTTP(shutdown)

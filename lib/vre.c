@@ -66,6 +66,7 @@ struct vre {
 const int VRE_ERROR_NOMATCH = PCRE2_ERROR_NOMATCH;
 
 const unsigned VRE_CASELESS = PCRE2_CASELESS;
+const unsigned VRE_NO_AUTO_CAPTURE = PCRE2_NO_AUTO_CAPTURE;
 
 vre_t *
 VRE_compile(const char *pattern, unsigned options,
@@ -173,7 +174,7 @@ VRE_export(const vre_t *code, size_t *sz)
 
 	INIT_OBJ(exp, VRE_MAGIC);
 	exp->re = VRE_PACKED_RE;
-	memcpy(exp + 1, re, *sz);
+	vmemcpy(exp + 1, re, *sz);
 	*sz += sizeof(*exp);
 	return (exp);
 }

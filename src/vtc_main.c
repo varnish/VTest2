@@ -119,6 +119,8 @@ static int cleaner_fd = -1;
 static pid_t cleaner_pid;
 const char *default_listen_addr;
 
+static int has_color = 0;
+
 /**********************************************************************
  * autocrap test-driver command arguments
  */
@@ -230,10 +232,10 @@ cleaner_do(const char *dirname)
 {
 	char buf[BUFSIZ];
 
-	AZ(memcmp(dirname, tmppath, strlen(tmppath)));
+	AZ(vmemcmp(dirname, tmppath, vstrlen(tmppath)));
 	if (cleaner_pid > 0) {
 		bprintf(buf, "%s\n", dirname);
-		assert(write(cleaner_fd, buf, strlen(buf)) == strlen(buf));
+		assert(write(cleaner_fd, buf, vstrlen(buf)) == vstrlen(buf));
 		return;
 	}
 	bprintf(buf, "exec /bin/rm -rf %s\n", dirname);
@@ -259,8 +261,8 @@ cleaner_setup(void)
 		setbuf(stdin, NULL);
 		AZ(dup2(p[0], STDIN_FILENO));
 		while (fgets(buf, sizeof buf, stdin)) {
-			AZ(memcmp(buf, tmppath, strlen(tmppath)));
-			q = buf + strlen(buf);
+			AZ(vmemcmp(buf, tmppath, vstrlen(tmppath)));
+			q = buf + vstrlen(buf);
 			assert(q > buf);
 			assert(q[-1] == '\n');
 			q[-1] = '\0';
@@ -302,6 +304,17 @@ cleaner_finish(void)
 /**********************************************************************
  * CallBack
  */
+
+// from automake, ^[ == \x1b
+static const char * col_red="\x1b[0;31m";
+static const char * col_grn="\x1b[0;32m";
+static const char * col_blu="\x1b[1;34m";
+static const char * col_std="\x1b[m";
+#ifdef COL_UNUSED
+static const char * col_lgn="\x1b[1;32m";
+static const char * col_mgn="\x1b[0;35m";
+static const char * col_brg="\x1b[1m";
+#endif
 
 static int
 tst_cb(const struct vev *ve, int what)
@@ -385,36 +398,47 @@ tst_cb(const struct vev *ve, int what)
 			f = fopen(td_trs_file, "w");
 			AN(f);
 			if (jp->killed || ecode > 1) {
+				printf("%sFAIL%s: %s\n",
+				    col_red, col_std, jp->tst->filename);
 				fprintf(f, ":test-result: FAIL\n");
 				fprintf(f, ":copy-in-global-log: yes\n");
+				fprintf(f, ":recheck: yes\n");
 			} else if (ecode) {
+				printf("%sSKIP%s: %s\n",
+				    col_blu, col_std, jp->tst->filename);
 				fprintf(f, ":test-result: SKIP\n");
 				fprintf(f, ":copy-in-global-log: yes\n");
+				fprintf(f, ":recheck: no\n");
 			} else {
+				printf("%sPASS%s: %s\n",
+				    col_grn, col_std, jp->tst->filename);
 				fprintf(f, ":test-result: PASS\n");
 				fprintf(f, ":copy-in-global-log: no\n");
+				fprintf(f, ":recheck: no\n");
 			}
 			AZ(fclose(f));
-		}
-
-		if (jp->killed)
-			printf("#    top  TEST %s TIMED OUT (kill -9)\n",
-			    jp->tst->filename);
-		if (ecode > 1) {
-			printf("#    top  TEST %s FAILED (%.3f)",
-			    jp->tst->filename, t);
-			if (WIFSIGNALED(stx))
-				printf(" signal=%d\n", WTERMSIG(stx));
-			else if (WIFEXITED(stx))
-				printf(" exit=%d\n", WEXITSTATUS(stx));
-			if (!vtc_continue && td_trs_file == NULL) {
-				/* XXX kill -9 other jobs ? */
-				exit(2);
+		} else {
+			if (jp->killed) {
+				printf(
+				    "#    top  TEST %s TIMED OUT (kill -9)\n",
+				    jp->tst->filename);
 			}
-		} else if (vtc_verbosity) {
-			printf("#    top  TEST %s %s (%.3f)\n",
-			    jp->tst->filename,
-			    ecode ? "skipped" : "passed", t);
+			if (ecode > 1) {
+				printf("#    top  TEST %s FAILED (%.3f)",
+				    jp->tst->filename, t);
+				if (WIFSIGNALED(stx))
+					printf(" signal=%d\n", WTERMSIG(stx));
+				else if (WIFEXITED(stx))
+					printf(" exit=%d\n", WEXITSTATUS(stx));
+				if (!vtc_continue) {
+					/* XXX kill -9 other jobs ? */
+					exit(2);
+				}
+			} else if (vtc_verbosity) {
+				printf("#    top  TEST %s %s (%.3f)\n",
+				    jp->tst->filename,
+				    ecode ? "skipped" : "passed", t);
+			}
 		}
 		if (jp->evt != NULL) {
 			VEV_Stop(vb, jp->evt);
@@ -538,7 +562,7 @@ top_dir(const char *makefile, const char *top_var)
 		return (NULL);
 	}
 
-	b = memchr(b, '/', e - b);
+	b = vmemchr(b, '/', e - b);
 	if (b == NULL) {
 		fprintf(stderr, "No '/' after '%s' in Makefile\n", top_var);
 		return (NULL);
@@ -567,7 +591,7 @@ build_path(const char *topdir, const char *subdir,
 		de = readdir(dir);
 		if (de == NULL)
 			break;
-		if (strncmp(de->d_name, pfx, strlen(pfx)))
+		if (vstrncmp(de->d_name, pfx, vstrlen(pfx)))
 			continue;
 		bprintf(buf, "%s%s%s/%s", topdir, topsep, subdir, de->d_name);
 		if (!stat(buf, &st) && S_ISDIR(st.st_mode)) {
@@ -776,7 +800,7 @@ macro_func_string_repeat(int argc, char *const *argv, const char **err)
 		return (NULL);
 	}
 
-	l = (strlen(argv[3]) * i) + 1;
+	l = (vstrlen(argv[3]) * i) + 1;
 	res = malloc(l);
 	AN(res);
 	AN(VSB_init(vsb, res, l));
@@ -802,7 +826,7 @@ macro_func_string(int argc, char *const *argv, const char **err)
 		return (NULL);
 	}
 
-	if (!strcmp(argv[2], "repeat"))
+	if (!vstrcmp(argv[2], "repeat"))
 		return (macro_func_string_repeat(argc - 1, argv + 1, err));
 
 	*err = "unknown action";
@@ -841,8 +865,8 @@ read_file(const char *fn)
 		return (2);
 	}
 
-	if ((strncmp(q, "varnishtest", 11) || !isspace(q[11])) &&
-	    (strncmp(q, "vtest", 5) || !isspace(q[5]))) {
+	if ((vstrncmp(q, "varnishtest", 11) || !isspace(q[11])) &&
+	    (vstrncmp(q, "vtest", 5) || !isspace(q[5]))) {
 		fprintf(stderr,
 		    "File \"%s\" doesn't start with"
 		    " 'vtest' or 'varnishtest'\n", fn);
@@ -868,12 +892,12 @@ static void
 automake_test_driver_arguments(int argc, char *const *argv)
 {
 
-        argc -= 1;
-        argv += 1;
+	argc -= 1;
+	argv += 1;
 
-        while (argc > 1) {
+	while (argc > 1) {
 #define TDSAVE(name, dst) \
-		if (!strcmp(*argv, name)) { \
+		if (!vstrcmp(*argv, name)) { \
 			dst = argv[1]; \
 			AN(dst); \
 			argc -= 2; \
@@ -882,21 +906,32 @@ automake_test_driver_arguments(int argc, char *const *argv)
 		}
 	TDARGS(TDSAVE)
 #undef TDSAVE
-		if (!strcmp(*argv, "--extension")) {
+		if (!vstrcmp(*argv, "--extension")) {
 			add_extension(argv[1]);
 			argc -= 2;
 			argv += 2;
 			continue;
 		}
-		if (strcmp(*argv, "--")) {
+		if (!vstrcmp(*argv, "--verbose")) {
+			vtc_verbosity++;
+			argc -= 1;
+			argv += 1;
+			continue;
+		}
+		if (!vstrcmp(*argv, "--in-tree")) {
+			iflg++;
+			argc -= 1;
+			argv += 1;
+			continue;
+		}
+		if (vstrcmp(*argv, "--")) {
 			fprintf(stderr, "Not '--': '%s'\n", *argv);
 			usage();
 		}
 		if (read_file(argv[1]))
 			usage();
-                printf("Running test %s\n", argv[1]);
 		break;
-        }
+	}
 	vtc_verbosity = 0;
 }
 
@@ -1051,10 +1086,16 @@ main(int argc, char * const *argv)
 		usual_arguments(argc, argv);
 	}
 
-
 	AZ(VSB_finish(params_vsb));
 
 	vtc_tls_init();
+
+	p = getenv("TERM");
+	has_color = getenv("NO_COLOR") == NULL &&
+	    isatty(fileno(stdout)) &&
+	    p != NULL && vstrcmp(p, "dumb");
+	if (! has_color)
+		col_red = col_grn = col_blu = col_std = "";
 
 	ip_magic();
 

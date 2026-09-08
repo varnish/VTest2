@@ -82,17 +82,17 @@ Sess_GetOpt(struct vtc_sess *vsp, char * const **avp)
 	AN(avp);
 	av = *avp;
 	AN(*av);
-	if (!strcmp(*av, "-rcvbuf")) {
+	if (!vstrcmp(*av, "-rcvbuf")) {
 		AN(av[1]);
 		vsp->rcvbuf = atoi(av[1]);
 		av += 1;
 		rv = 1;
-	} else if (!strcmp(*av, "-repeat")) {
+	} else if (!vstrcmp(*av, "-repeat")) {
 		AN(av[1]);
 		vsp->repeat = atoi(av[1]);
 		av += 1;
 		rv = 1;
-	} else if (!strcmp(*av, "-keepalive")) {
+	} else if (!vstrcmp(*av, "-keepalive")) {
 		vsp->keepalive = 1;
 		rv = 1;
 	}

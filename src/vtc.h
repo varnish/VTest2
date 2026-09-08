@@ -45,7 +45,7 @@
 #include "vsb.h"
 #include "vqueue.h"
 
-#include "vtest_api.h"
+#include <vtest_api.h>
 
 struct suckaddr;
 

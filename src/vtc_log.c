@@ -177,7 +177,7 @@ vtc_log_emit(const struct vtclog *vl)
 		vtclog_left -= i;
 	}
 	assert(vtclog_left > l);
-	memcpy(vtclog_buf, VSB_data(vl->vsb), l);
+	vmemcpy(vtclog_buf, VSB_data(vl->vsb), l);
 	vtclog_buf += l;
 	*vtclog_buf = '\0';
 	vtclog_left -= l;
@@ -237,7 +237,7 @@ vtc_dump(struct vtclog *vl, int lvl, const char *pfx, const char *str, int len)
 		bprintf(buf, "%s %-5s %s|",
 		    lead[lvl < 0 ? 1: lvl], vl->id, pfx);
 		if (len < 0)
-			len = strlen(str);
+			len = vstrlen(str);
 		else if (str[0] == 0x1f && (uint8_t)str[1] == 0x8b)
 			quote = VSB_QUOTE_HEX; // Dump gzip data in HEX
 		VSB_quote_pfx(vl->vsb, buf, str,

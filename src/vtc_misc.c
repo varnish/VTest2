@@ -77,7 +77,7 @@ cmd_vtest(CMD_ARGS)
 	(void)priv;
 	if (av == NULL)
 		return;
-	AZ(strcmp(av[0], "vtest"));
+	AZ(vstrcmp(av[0], "vtest"));
 
 	ARGN(vl, av, 1);
 	vtc_log(vl, 1, "VTEST %s", av[1]);
@@ -97,7 +97,7 @@ cmd_varnishtest(CMD_ARGS)
 	(void)priv;
 	if (av == NULL)
 		return;
-	AZ(strcmp(av[0], "varnishtest"));
+	AZ(vstrcmp(av[0], "varnishtest"));
 
 	ARGN(vl, av, 1);
 	vtc_log(vl, 1, "VTEST %s", av[1]);
@@ -226,18 +226,18 @@ cmd_shell(CMD_ARGS)
 	if (av == NULL)
 		return;
 	for (n = 1; av[n] != NULL; n++) {
-		if (!strcmp(av[n], "-err")) {
+		if (!vstrcmp(av[n], "-err")) {
 			ok = -1;
-		} else if (!strcmp(av[n], "-exit")) {
+		} else if (!vstrcmp(av[n], "-exit")) {
 			n += 1;
 			ok = atoi(av[n]);
-		} else if (!strcmp(av[n], "-expect")) {
+		} else if (!vstrcmp(av[n], "-expect")) {
 			if (re != NULL)
 				vtc_fatal(vl,
 				    "Cannot use -expect with -match");
 			n += 1;
 			expect = av[n];
-		} else if (!strcmp(av[n], "-match")) {
+		} else if (!vstrcmp(av[n], "-match")) {
 			if (expect != NULL)
 				vtc_fatal(vl,
 				    "Cannot use -match with -expect");
@@ -272,7 +272,7 @@ cmd_filewrite(CMD_ARGS)
 
 	if (av == NULL)
 		return;
-	if (av[1] != NULL && !strcmp(av[1], "-a")) {
+	if (av[1] != NULL && !vstrcmp(av[1], "-a")) {
 		av++;
 		mode = "a";
 	}
@@ -314,7 +314,7 @@ cmd_setenv(CMD_ARGS)
 	ARGN(vl, av, 2);
 
 	force = 1;
-	if (strcmp("-ifunset", av[1]) == 0) {
+	if (vstrcmp("-ifunset", av[1]) == 0) {
 		force = 0;
 		av++;
 		ARGN(vl, av, 2);
@@ -402,7 +402,7 @@ dns_works(void)
 		return (0);
 	VTCP_name(sa, abuf, sizeof abuf, pbuf, sizeof pbuf);
 	VSA_free(&sa);
-	if (strcmp(abuf, "192.0.2.255"))
+	if (vstrcmp(abuf, "192.0.2.255"))
 		return (0);
 
 	sa = VSS_ResolveOne(NULL, "dns-canary.vinyl-cache.org", NULL,
@@ -528,6 +528,8 @@ abstract_uds_works(void)
  *        Varnish was built with a sanitizer.
  * workspace_emulator
  *        Varnish was built with its workspace emulator.
+ * witness
+ *        A compile flag was present indicating the lock witness.
  * abstract_uds
  *        Creation of an abstract unix domain socket succeeded.
  * disable_aslr
@@ -585,6 +587,12 @@ static const unsigned workspace_emulator = 1;
 static const unsigned workspace_emulator = 0;
 #endif
 
+#if ENABLE_WITNESS
+static const unsigned witness = 1;
+#else
+static const unsigned witness = 0;
+#endif
+
 #if WITH_PERSISTENT_STORAGE
 static const unsigned with_persistent_storage = 1;
 #else
@@ -604,7 +612,7 @@ cmd_feature(CMD_ARGS)
 
 #define FEATURE(nm, tst)				\
 	do {						\
-		if (!strcmp(feat, nm)) {		\
+		if (!vstrcmp(feat, nm)) {		\
 			good = 1;			\
 			if (tst) {			\
 				skip = neg;		\
@@ -647,6 +655,7 @@ cmd_feature(CMD_ARGS)
 		FEATURE("ubsan", ubsan);
 		FEATURE("sanitizer", sanitizer);
 		FEATURE("workspace_emulator", workspace_emulator);
+		FEATURE("witness", witness);
 		FEATURE("abstract_uds", abstract_uds_works());
 		FEATURE("tls", 1);
 #if defined(TLS1_3_VERSION) || OPENSSL_VERSION_NUMBER >= 0x10101000L
@@ -660,7 +669,7 @@ cmd_feature(CMD_ARGS)
 		FEATURE("tls_raw_staple", 0);
 #endif
 
-		if (!strcmp(feat, "user")) {
+		if (!vstrcmp(feat, "user")) {
 			av++;
 			if (*av == NULL)
 				vtc_fatal(vl, "Missing username");
@@ -669,7 +678,7 @@ cmd_feature(CMD_ARGS)
 				skip = neg;
 			else
 				skip = !neg;
-		} else if (!strcmp(feat, "group")) {
+		} else if (!vstrcmp(feat, "group")) {
 			av++;
 			if (*av == NULL)
 				vtc_fatal(vl, "Missing groupname");
@@ -678,7 +687,7 @@ cmd_feature(CMD_ARGS)
 				skip = neg;
 			else
 				skip = !neg;
-		} else if (!strcmp(feat, "cmd")) {
+		} else if (!vstrcmp(feat, "cmd")) {
 			good = 1;
 			skip = neg;
 			av++;
@@ -687,10 +696,10 @@ cmd_feature(CMD_ARGS)
 			r = system(*av);
 			if (WEXITSTATUS(r) != 0)
 				skip = !neg;
-		} else if (!strcmp(feat, "ignore_unknown_macro")) {
+		} else if (!vstrcmp(feat, "ignore_unknown_macro")) {
 			ign_unknown_macro = 1;
 			good = 1;
-		} else if (!strcmp(feat, "vtest_cmd")) {
+		} else if (!vstrcmp(feat, "vtest_cmd")) {
 			good = 1;
 			skip = !neg;
 			av++;

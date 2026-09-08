@@ -10,7 +10,7 @@ server s1 {
 		txrst -err 2
 
 # SETTINGS
-		txsettings -push true -hdrtbl 11111111 -maxstreams 222222 -winsize 333333 -framesize 444444 -hdrsize 555555
+		txsettings -hdrtbl 11111111 -push true -maxstreams 222222 -winsize 333333 -framesize 444444 -hdrsize 555555 -connect true -no_prio true -tls_reneg 3
 		txsettings -ack
 
 # PING
@@ -49,18 +49,26 @@ client c1 -connect ${s1_sock} {
 # SETTINGS
 		rxsettings
 		expect settings.hdrtbl == 11111111
+		expect settings.push == "true"
 		expect settings.maxstreams == 222222
 		expect settings.winsize == 333333
 		expect settings.framesize == 444444
 		expect settings.hdrsize == 555555
+		expect settings.connect == "true"
+		expect settings.no_prio == "true"
+		expect settings.tls_reneg == 3
 
 		rxsettings
 		expect settings.ack == true
 		expect settings.hdrtbl == <undef>
+		expect settings.push == <undef>
 		expect settings.maxstreams == <undef>
 		expect settings.winsize == <undef>
 		expect settings.framesize == <undef>
 		expect settings.hdrsize == <undef>
+		expect settings.connect == <undef>
+		expect settings.no_prio == <undef>
+		expect settings.tls_reneg == <undef>
 
 # PING
 		rxping

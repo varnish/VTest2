@@ -34,6 +34,7 @@
 
 #include <sys/socket.h>
 
+#include <errno.h>
 #include <fcntl.h>
 #include <fnmatch.h>
 #include <inttypes.h>
@@ -148,8 +149,8 @@ varnish_ask_cli(const struct varnish *v, const char *cmd, char **repl)
 
 	if (cmd != NULL) {
 		vtc_dump(v->vl, 4, "CLI TX", cmd, -1);
-		i = write(v->cli_fd, cmd, strlen(cmd));
-		if (i != strlen(cmd) && !vtc_stop)
+		i = write(v->cli_fd, cmd, vstrlen(cmd));
+		if (i != vstrlen(cmd) && !vtc_stop)
 			varnish_fatal(v, "CLI write failed (%s) = %u %s",
 			    cmd, errno, strerror(errno));
 		i = write(v->cli_fd, "\n", 1);
@@ -186,7 +187,7 @@ wait_stopped(const struct varnish *v)
 		if (st != CLIS_OK)
 			varnish_fatal(v,
 			    "CLI status command failed: %u %s", st, r);
-		if (!strcmp(r, "Child in state stopped")) {
+		if (!vstrcmp(r, "Child in state stopped")) {
 			free(r);
 			break;
 		}
@@ -211,10 +212,10 @@ wait_running(const struct varnish *v)
 		if (st != CLIS_OK)
 			varnish_fatal(v,
 			    "CLI status command failed: %u %s", st, r);
-		if (!strcmp(r, "Child in state stopped"))
+		if (!vstrcmp(r, "Child in state stopped"))
 			varnish_fatal(v,
 			    "Child stopped before running: %u %s", st, r);
-		if (!strcmp(r, "Child in state running")) {
+		if (!vstrcmp(r, "Child in state running")) {
 			free(r);
 			r = NULL;
 			st = varnish_ask_cli(v, "debug.listen_address", &r);
@@ -643,7 +644,7 @@ varnish_listen(const struct varnish *v, char *la)
 			first = 0;
 		}
 
-		if (!strcmp(n, n2))
+		if (!vstrcmp(n, n2))
 			continue;
 
 		bprintf(m, "%s_addr", n);
@@ -934,11 +935,11 @@ do_stat_dump_cb(void *priv, const struct VSC_point * const pt)
 	dp = priv;
 	v = dp->v;
 
-	if (strcmp(pt->ctype, "uint64_t"))
+	if (vstrcmp(pt->ctype, "uint64_t"))
 		return (0);
 	u = VSC_Value(pt);
 
-	if (strcmp(dp->arg, "*")) {
+	if (vstrcmp(dp->arg, "*")) {
 		if (fnmatch(dp->arg, pt->name, 0))
 			return (0);
 	}
@@ -996,7 +997,7 @@ do_expect_cb(void *priv, const struct VSC_point * const pt)
 		return (0);
 
 	if (!sp->lhs.good && stat_match(sp->lhs.pattern, pt->name) == 0) {
-		AZ(strcmp(pt->ctype, "uint64_t"));
+		AZ(vstrcmp(pt->ctype, "uint64_t"));
 		AN(pt->ptr);
 		sp->lhs.val = VSC_Value(pt);
 		sp->lhs.good = 1;
@@ -1006,7 +1007,7 @@ do_expect_cb(void *priv, const struct VSC_point * const pt)
 		sp->rhs.good = 1;
 	} else if (!sp->rhs.good &&
 	    stat_match(sp->rhs.pattern, pt->name) == 0) {
-		AZ(strcmp(pt->ctype, "uint64_t"));
+		AZ(vstrcmp(pt->ctype, "uint64_t"));
 		AN(pt->ptr);
 		sp->rhs.val = VSC_Value(pt);
 		sp->rhs.good = 1;
@@ -1036,8 +1037,9 @@ varnish_expect(struct varnish *v, char * const *av)
 	} else {
 		ARGN(vl, av, 1);
 		ARGN(vl, av, 2);
+		errno = 0;
 		u = strtoumax(av[2], &p, 0);
-		if (u != UINTMAX_MAX && *p == '\0')
+		if (errno != ERANGE && *p == '\0')
 			sp.rhs.val = u;
 		else
 			sp.rhs.pattern = av[2];
@@ -1058,12 +1060,12 @@ varnish_expect(struct varnish *v, char * const *av)
 			varnish_fatal(v, "Found (not expected): %s", l);
 
 		good = -1;
-		if (!strcmp(av[1], "==")) good = (sp.lhs.val == sp.rhs.val);
-		if (!strcmp(av[1], "!=")) good = (sp.lhs.val != sp.rhs.val);
-		if (!strcmp(av[1], ">" )) good = (sp.lhs.val >  sp.rhs.val);
-		if (!strcmp(av[1], "<" )) good = (sp.lhs.val <  sp.rhs.val);
-		if (!strcmp(av[1], ">=")) good = (sp.lhs.val >= sp.rhs.val);
-		if (!strcmp(av[1], "<=")) good = (sp.lhs.val <= sp.rhs.val);
+		if (!vstrcmp(av[1], "==")) good = (sp.lhs.val == sp.rhs.val);
+		if (!vstrcmp(av[1], "!=")) good = (sp.lhs.val != sp.rhs.val);
+		if (!vstrcmp(av[1], ">" )) good = (sp.lhs.val >  sp.rhs.val);
+		if (!vstrcmp(av[1], "<" )) good = (sp.lhs.val <  sp.rhs.val);
+		if (!vstrcmp(av[1], ">=")) good = (sp.lhs.val >= sp.rhs.val);
+		if (!vstrcmp(av[1], "<=")) good = (sp.lhs.val <= sp.rhs.val);
 		if (good == -1)
 			varnish_fatal(v, "comparison %s unknown", av[1]);
 		if (good)
@@ -1249,12 +1251,12 @@ cmd_varnish(CMD_ARGS)
 		return;
 	}
 
-	AZ(strcmp(av[0], "varnish"));
+	AZ(vstrcmp(av[0], "varnish"));
 	av++;
 
 	VTC_CHECK_NAME(vl, av[0], "Varnish", 'v');
 	VTAILQ_FOREACH(v, &varnishes, list)
-		if (!strcmp(v->name, av[0]))
+		if (!vstrcmp(v->name, av[0]))
 			break;
 	if (v == NULL)
 		v = varnish_new(av[0]);
@@ -1264,7 +1266,7 @@ cmd_varnish(CMD_ARGS)
 	for (; *av != NULL; av++) {
 		if (vtc_error)
 			break;
-		if (!strcmp(*av, "-arg")) {
+		if (!vstrcmp(*av, "-arg")) {
 			ARGN(vl, av, 1);
 			AZ(v->pid);
 			VSB_cat(v->args, " ");
@@ -1274,25 +1276,25 @@ cmd_varnish(CMD_ARGS)
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-cleanup")) {
+		if (!vstrcmp(*av, "-cleanup")) {
 			ARGZ(vl, av, 1);
 			varnish_cleanup(v);
 			continue;
 		}
-		if (!strcmp(*av, "-cli")) {
+		if (!vstrcmp(*av, "-cli")) {
 			ARGN(vl, av, 1);
 			varnish_cli(v, av[1], 0, NULL, 0);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-clierr")) {
+		if (!vstrcmp(*av, "-clierr")) {
 			ARGN(vl, av, 1);
 			ARGN(vl, av, 2);
 			varnish_cli(v, av[2], atoi(av[1]), NULL, 0);
 			av += 2;
 			continue;
 		}
-		if (!strcmp(*av, "-cliexpect")) {
+		if (!vstrcmp(*av, "-cliexpect")) {
 			int neg = 0;
 
 			ARGN(vl, av, 1);
@@ -1306,19 +1308,19 @@ cmd_varnish(CMD_ARGS)
 			av += 2;
 			continue;
 		}
-		if (!strcmp(*av, "-clijson")) {
+		if (!vstrcmp(*av, "-clijson")) {
 			ARGN(vl, av, 1);
 			varnish_cli_json(v, av[1]);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-cliok")) {
+		if (!vstrcmp(*av, "-cliok")) {
 			ARGN(vl, av, 1);
 			varnish_cli(v, av[1], (unsigned)CLIS_OK, NULL, 0);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-errvcl")) {
+		if (!vstrcmp(*av, "-errvcl")) {
 			char *r = NULL;
 			ARGN(vl, av, 1);
 			ARGN(vl, av, 2);
@@ -1335,76 +1337,76 @@ cmd_varnish(CMD_ARGS)
 			av += 2;
 			continue;
 		}
-		if (!strcmp(*av, "-expect")) {
+		if (!vstrcmp(*av, "-expect")) {
 			av++;
 			varnish_expect(v, av);
 			av += 2;
 			continue;
 		}
-		if (!strcmp(*av, "-expectexit")) {
+		if (!vstrcmp(*av, "-expectexit")) {
 			v->expect_exit = strtoul(av[1], NULL, 0);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-jail")) {
+		if (!vstrcmp(*av, "-jail")) {
 			ARGN(vl, av, 1);
 			AZ(v->pid);
 			REPLACE(v->jail, av[1]);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-proto")) {
+		if (!vstrcmp(*av, "-proto")) {
 			ARGN(vl, av, 1);
 			AZ(v->pid);
 			REPLACE(v->proto, av[1]);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-start")) {
+		if (!vstrcmp(*av, "-start")) {
 			varnish_start(v);
 			continue;
 		}
-		if (!strcmp(*av, "-stop")) {
+		if (!vstrcmp(*av, "-stop")) {
 			varnish_stop(v);
 			continue;
 		}
-		if (!strcmp(*av, "-syntax")) {
+		if (!vstrcmp(*av, "-syntax")) {
 			ARGN(vl, av, 1);
 			v->syntax = strtod(av[1], NULL);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-vcl")) {
+		if (!vstrcmp(*av, "-vcl")) {
 			ARGN(vl, av, 1);
 			varnish_vcl(v, av[1], 0, NULL);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-vcl+backend")) {
+		if (!vstrcmp(*av, "-vcl+backend")) {
 			ARGN(vl, av, 1);
 			varnish_vclbackend(v, av[1]);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-vsc")) {
+		if (!vstrcmp(*av, "-vsc")) {
 			ARGN(vl, av, 1);
 			varnish_vsc(v, av[1]);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-wait-stopped")) {
+		if (!vstrcmp(*av, "-wait-stopped")) {
 			wait_stopped(v);
 			continue;
 		}
-		if (!strcmp(*av, "-wait-running")) {
+		if (!vstrcmp(*av, "-wait-running")) {
 			wait_running(v);
 			continue;
 		}
-		if (!strcmp(*av, "-wait")) {
+		if (!vstrcmp(*av, "-wait")) {
 			varnish_wait(v);
 			continue;
 		}
-		if (!strcmp(*av, "-vsl_catchup")) {
+		if (!vstrcmp(*av, "-vsl_catchup")) {
 			vsl_catchup(v);
 			continue;
 		}

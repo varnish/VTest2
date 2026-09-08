@@ -123,7 +123,7 @@ vtc_gunzip(struct http *hp, char *body, long *bodylen)
 	vout = vtc_gunzip_vsb(hp->vl, hp->fatal, vin);
 	VSB_destroy(&vin);
 
-	memcpy(body, VSB_data(vout), APOS(VSB_len(vout) + 1));
+	vmemcpy(body, VSB_data(vout), APOS(VSB_len(vout) + 1));
 	*bodylen = APOS(VSB_len(vout));
 	VSB_destroy(&vout);
 	vtc_log(hp->vl, 3, "new bodylen %ld", *bodylen);
@@ -163,7 +163,7 @@ vtc_gzip(struct http *hp, const char *input, char **body, long *bodylen, int fra
 {
 	struct vsb *vout;
 	int i, res;
-	size_t inlen = strlen(input);
+	size_t inlen = vstrlen(input);
 	z_stream vz;
 
 	memset(&vz, 0, sizeof vz);
@@ -180,7 +180,7 @@ vtc_gzip(struct http *hp, const char *input, char **body, long *bodylen, int fra
 			vtc_log(hp->vl, hp->fatal,
 			    "Gzip error = %d (%s) in:%jd out:%jd len:%zd",
 			    i, vz.msg, (intmax_t)vz.total_in,
-			    (intmax_t)vz.total_out, strlen(input));
+			    (intmax_t)vz.total_out, vstrlen(input));
 		}
 		input += res;
 		inlen -= res;
@@ -191,7 +191,7 @@ vtc_gzip(struct http *hp, const char *input, char **body, long *bodylen, int fra
 		vtc_log(hp->vl, hp->fatal,
 		    "Gzip error = %d (%s) in:%jd out:%jd len:%zd",
 		    i, vz.msg, (intmax_t)vz.total_in, (intmax_t)vz.total_out,
-		    strlen(input));
+		    vstrlen(input));
 	}
 	AZ(VSB_finish(vout));
 #ifdef VGZ_EXTENSIONS
@@ -210,7 +210,7 @@ vtc_gzip(struct http *hp, const char *input, char **body, long *bodylen, int fra
 #endif
 	*body = malloc(APOS(VSB_len(vout) + 1));
 	AN(*body);
-	memcpy(*body, VSB_data(vout), APOS(VSB_len(vout) + 1));
+	vmemcpy(*body, VSB_data(vout), APOS(VSB_len(vout) + 1));
 	*bodylen = APOS(VSB_len(vout));
 	VSB_destroy(&vout);
 	vtc_log(hp->vl, 3, "new bodylen %ld", *bodylen);
@@ -228,15 +228,15 @@ vtc_gzip_cmd(struct http *hp, char * const *av, char **body, long *bodylen)
 	AN(body);
 	AN(bodylen);
 
-	if (!strcmp(*av, "-gzipresidual")) {
+	if (!vstrcmp(*av, "-gzipresidual")) {
 		hp->gzipresidual = strtoul(av[1], NULL, 0);
 		return (1);
 	}
-	if (!strcmp(*av, "-gziplevel")) {
+	if (!vstrcmp(*av, "-gziplevel")) {
 		hp->gziplevel = strtoul(av[1], NULL, 0);
 		return (1);
 	}
-	if (!strcmp(*av, "-gzipbody")) {
+	if (!vstrcmp(*av, "-gzipbody")) {
 		if (*body != NULL)
 			free(*body);
 		*body = NULL;
@@ -244,7 +244,7 @@ vtc_gzip_cmd(struct http *hp, char * const *av, char **body, long *bodylen)
 		AN(*body);
 		return (2);
 	}
-	if (!strcmp(*av, "-gziplen")) {
+	if (!vstrcmp(*av, "-gziplen")) {
 		if (*body != NULL)
 			free(*body);
 		*body = NULL;

@@ -469,35 +469,35 @@ cmd_barrier(CMD_ARGS)
 		return;
 	}
 
-	AZ(strcmp(av[0], "barrier"));
+	AZ(vstrcmp(av[0], "barrier"));
 	av++;
 
 	VTC_CHECK_NAME(vl, av[0], "Barrier", 'b');
 	VTAILQ_FOREACH(b, &barriers, list)
-		if (!strcmp(b->name, av[0]))
+		if (!vstrcmp(b->name, av[0]))
 			break;
 	if (b == NULL)
 		b = barrier_new(av[0], vl);
 	av++;
 
 	for (; *av != NULL; av++) {
-		if (!strcmp(*av, "cond")) {
+		if (!vstrcmp(*av, "cond")) {
 			av++;
 			AN(*av);
 			barrier_cond(b, *av, vl);
 			continue;
 		}
-		if (!strcmp(*av, "sock")) {
+		if (!vstrcmp(*av, "sock")) {
 			av++;
 			AN(*av);
 			barrier_sock(b, *av, vl);
 			continue;
 		}
-		if (!strcmp(*av, "sync")) {
+		if (!vstrcmp(*av, "sync")) {
 			barrier_sync(b, vl);
 			continue;
 		}
-		if (!strcmp(*av, "-cyclic")) {
+		if (!vstrcmp(*av, "-cyclic")) {
 			barrier_cyclic(b, vl);
 			continue;
 		}

@@ -152,7 +152,7 @@ VSB_extend(struct vsb *s, ssize_t addlen)
 	if (newbuf == NULL)
 		return (-1);
 	if (!VSB_ISDYNAMIC(s)) {
-		memcpy(newbuf, s->s_buf, s->s_size);
+		vmemcpy(newbuf, s->s_buf, s->s_size);
 		VSB_SETFLAG(s, VSB_DYNAMIC);
 	}
 	s->s_buf = newbuf;
@@ -299,7 +299,7 @@ VSB_bcat(struct vsb *s, const void *buf, ssize_t len)
 		if (s->s_error != 0)
 			return (-1);
 	}
-	memcpy(s->s_buf + s->s_len, buf, len);
+	vmemcpy(s->s_buf + s->s_len, buf, len);
 	s->s_len += len;
 	return (0);
 }
@@ -328,7 +328,7 @@ VSB_cat(struct vsb *s, const char *str)
 		str += l;
 	}
 
-	l = strlen(str);
+	l = vstrlen(str);
 	return (VSB_bcat(s, str, l));
 }
 
@@ -543,8 +543,17 @@ VSB_quote_pfx(struct vsb *s, const char *pfx, const void *v, int len, int how)
 		how |= VSB_QUOTE_NONL;
 
 	assert(p != NULL);
+	if (how & VSB_QUOTE_ABBREVIATE) {
+		assert (len > 5);
+		if (vstrlen(v) < (unsigned)len) {
+			len = vstrlen(v);
+			how &= ~VSB_QUOTE_ABBREVIATE;
+		} else {
+			len -= 5;
+		}
+	}
 	if (len == -1)
-		len = strlen(v);
+		len = vstrlen(v);
 
 	if (len == 0 && (how & VSB_QUOTE_CSTR)) {
 		VSB_printf(s, "%s\"\"", pfx);
@@ -582,11 +591,13 @@ VSB_quote_pfx(struct vsb *s, const char *pfx, const void *v, int len, int how)
 
 	if (!quote) {
 		VSB_bcat(s, p, len);
+		if (how & VSB_QUOTE_CSTR)
+			VSB_putc(s, '"');
+		if (how & VSB_QUOTE_ABBREVIATE)
+			VSB_cat(s, "[...]");
 		if ((how & VSB_QUOTE_NONL) &&
 		    p[len-1] != '\n')
 			(void)VSB_putc(s, '\n');
-		if (how & VSB_QUOTE_CSTR)
-			VSB_putc(s, '"');
 		return;
 	}
 
@@ -642,6 +653,8 @@ VSB_quote_pfx(struct vsb *s, const char *pfx, const void *v, int len, int how)
 	}
 	if (how & VSB_QUOTE_CSTR)
 		VSB_putc(s, '"');
+	if (how & VSB_QUOTE_ABBREVIATE)
+		VSB_cat(s, "[...]");
 	if ((how & VSB_QUOTE_NONL) && !nl)
 		VSB_putc(s, '\n');
 }

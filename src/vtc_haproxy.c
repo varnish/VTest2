@@ -210,7 +210,7 @@ cmd_haproxy_cli_send(CMD_ARGS)
 
 	(void)vl;
 	CAST_OBJ_NOTNULL(hc, priv, HAPROXY_CLI_MAGIC);
-	AZ(strcmp(av[0], "send"));
+	AZ(vstrcmp(av[0], "send"));
 	ARGN(vl, av, 1);
 	ARGZ(vl, av, 2);
 
@@ -311,7 +311,7 @@ cmd_haproxy_cli_expect(CMD_ARGS)
 
 	(void)vl;
 	CAST_OBJ_NOTNULL(hc, priv, HAPROXY_CLI_MAGIC);
-	AZ(strcmp(av[0], "expect"));
+	AZ(vstrcmp(av[0], "expect"));
 	av++;
 
 	cmp = av[0];
@@ -320,7 +320,7 @@ cmd_haproxy_cli_expect(CMD_ARGS)
 	AN(spec);
 	ARGZ(vl, av, 2);
 
-	assert(!strcmp(cmp, "~") || !strcmp(cmp, "!~"));
+	assert(!vstrcmp(cmp, "~") || !vstrcmp(cmp, "!~"));
 
 	haproxy_cli_recv(hc);
 
@@ -492,7 +492,7 @@ haproxy_bind_sdnotify(struct haproxy *h)
 	bprintf(sd_path, "%s/sd_notify.sock", h->workdir);
 	assert(sd_path[0] == '/');
 
-	if (strlen(sd_path) + 1 > sizeof(uds->sun_path)) {
+	if (vstrlen(sd_path) + 1 > sizeof(uds->sun_path)) {
 		vtc_fatal(h->vl, "Path %s too long for a Unix domain socket", sd_path);
 	}
 	memset(uds->sun_path, 0, sizeof(uds->sun_path));
@@ -955,15 +955,15 @@ haproxy_wait(struct haproxy *h)
 }
 
 #define HAPROXY_FD_ADDR_FAM_PREFIX        "fd@${"
-#define HAPROXY_FD_ADDR_FAM_PREFIX_LEN    strlen(HAPROXY_FD_ADDR_FAM_PREFIX)
+#define HAPROXY_FD_ADDR_FAM_PREFIX_LEN    vstrlen(HAPROXY_FD_ADDR_FAM_PREFIX)
 
 #define HAPROXY_QUIC_SOCK_TYPE            "quic"
 #define HAPROXY_QUIC_SOCK_TYPE_PREFIX     HAPROXY_QUIC_SOCK_TYPE "+"
-#define HAPROXY_QUIC_SOCK_TYPE_PREFIX_LEN strlen(HAPROXY_QUIC_SOCK_TYPE_PREFIX)
+#define HAPROXY_QUIC_SOCK_TYPE_PREFIX_LEN vstrlen(HAPROXY_QUIC_SOCK_TYPE_PREFIX)
 
 #define HAPROXY_VTC_SOCK_TYPE_ENV_VAR     "VTC_SOCK_TYPE"
 #define HAPROXY_VTC_SOCK_TYPE_PREFIX      "${" HAPROXY_VTC_SOCK_TYPE_ENV_VAR "}+"
-#define HAPROXY_VTC_SOCK_TYPE_PREFIX_LEN  strlen(HAPROXY_VTC_SOCK_TYPE_PREFIX)
+#define HAPROXY_VTC_SOCK_TYPE_PREFIX_LEN  vstrlen(HAPROXY_VTC_SOCK_TYPE_PREFIX)
 
 static int
 haproxy_build_backends(struct haproxy *h, const char *vsb_data)
@@ -998,16 +998,12 @@ haproxy_build_backends(struct haproxy *h, const char *vsb_data)
 		 * with "quic" as VTC_SOCK_TYPE environment variable value.
 		 */
 		quic_sock =
-			(p - s >= HAPROXY_QUIC_SOCK_TYPE_PREFIX_LEN &&
-			 !memcmp(p - HAPROXY_QUIC_SOCK_TYPE_PREFIX_LEN,
-			         HAPROXY_QUIC_SOCK_TYPE_PREFIX,
-			         HAPROXY_QUIC_SOCK_TYPE_PREFIX_LEN)) ||
-			(p - s >= HAPROXY_VTC_SOCK_TYPE_PREFIX_LEN &&
-			 !memcmp(p - HAPROXY_VTC_SOCK_TYPE_PREFIX_LEN,
-			         HAPROXY_VTC_SOCK_TYPE_PREFIX,
-			         HAPROXY_VTC_SOCK_TYPE_PREFIX_LEN) &&
+			(p - s >= (ssize_t)HAPROXY_QUIC_SOCK_TYPE_PREFIX_LEN &&
+			 !vmemcmp(p - HAPROXY_QUIC_SOCK_TYPE_PREFIX_LEN, HAPROXY_QUIC_SOCK_TYPE_PREFIX, HAPROXY_QUIC_SOCK_TYPE_PREFIX_LEN)) ||
+			(p - s >= (ssize_t)HAPROXY_VTC_SOCK_TYPE_PREFIX_LEN &&
+			 !vmemcmp(p - HAPROXY_VTC_SOCK_TYPE_PREFIX_LEN, HAPROXY_VTC_SOCK_TYPE_PREFIX, HAPROXY_VTC_SOCK_TYPE_PREFIX_LEN) &&
 			 sock_type != NULL &&
-			 !strcmp(sock_type, HAPROXY_QUIC_SOCK_TYPE));
+			 !vstrcmp(sock_type, HAPROXY_QUIC_SOCK_TYPE));
 
 		q = p += HAPROXY_FD_ADDR_FAM_PREFIX_LEN;
 		while (*q && *q != '}')
@@ -1204,12 +1200,12 @@ cmd_haproxy(CMD_ARGS)
 		return;
 	}
 
-	AZ(strcmp(av[0], "haproxy"));
+	AZ(vstrcmp(av[0], "haproxy"));
 	av++;
 
 	VTC_CHECK_NAME(vl, av[0], "haproxy", 'h');
 	VTAILQ_FOREACH(h, &haproxies, list)
-		if (!strcmp(h->name, av[0]))
+		if (!vstrcmp(h->name, av[0]))
 			break;
 	if (h == NULL)
 		h = haproxy_new(av[0]);
@@ -1219,7 +1215,7 @@ cmd_haproxy(CMD_ARGS)
 		if (vtc_error)
 			break;
 
-		if (!strcmp(*av, "-conf-OK")) {
+		if (!vstrcmp(*av, "-conf-OK")) {
 			ARGN(vl, av, 1);
 			haproxy_store_conf(h, av[1], 0);
 			h->expect_exit = 0;
@@ -1227,7 +1223,7 @@ cmd_haproxy(CMD_ARGS)
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-conf-BAD")) {
+		if (!vstrcmp(*av, "-conf-BAD")) {
 			ARGN(vl, av, 1);
 			ARGN(vl, av, 2);
 			haproxy_store_conf(h, av[2], 0);
@@ -1237,23 +1233,23 @@ cmd_haproxy(CMD_ARGS)
 			continue;
 		}
 
-		if (!strcmp(*av, HAPROXY_OPT_DAEMON)) {
+		if (!vstrcmp(*av, HAPROXY_OPT_DAEMON)) {
 			h->opt_daemon = 1;
 			continue;
 		}
-		if (!strcmp(*av, HAPROXY_OPT_WORKER)) {
+		if (!vstrcmp(*av, HAPROXY_OPT_WORKER)) {
 			h->opt_worker = 1;
 			continue;
 		}
-		if (!strcmp(*av, HAPROXY_OPT_SD_WORKER)) {
+		if (!vstrcmp(*av, HAPROXY_OPT_SD_WORKER)) {
 			h->opt_worker = 2;
 			continue;
 		}
-		if (!strcmp(*av, HAPROXY_OPT_MCLI)) {
+		if (!vstrcmp(*av, HAPROXY_OPT_MCLI)) {
 			h->opt_mcli = 1;
 			continue;
 		}
-		if (!strcmp(*av, "-arg")) {
+		if (!vstrcmp(*av, "-arg")) {
 			ARGN(vl, av, 1);
 			AZ(h->pid);
 			VSB_cat(h->args, " ");
@@ -1262,7 +1258,7 @@ cmd_haproxy(CMD_ARGS)
 			continue;
 		}
 
-		if (!strcmp(*av, "-cli")) {
+		if (!vstrcmp(*av, "-cli")) {
 			REPLACE(h->cli->spec, av[1]);
 			if (h->tp)
 				haproxy_cli_run(h->cli);
@@ -1270,7 +1266,7 @@ cmd_haproxy(CMD_ARGS)
 			continue;
 		}
 
-		if (!strcmp(*av, "-mcli")) {
+		if (!vstrcmp(*av, "-mcli")) {
 			REPLACE(h->mcli->spec, av[1]);
 			if (h->tp)
 				haproxy_cli_run(h->mcli);
@@ -1278,29 +1274,29 @@ cmd_haproxy(CMD_ARGS)
 			continue;
 		}
 
-		if (!strcmp(*av, "-conf")) {
+		if (!vstrcmp(*av, "-conf")) {
 			ARGN(vl, av, 1);
 			haproxy_store_conf(h, av[1], 0);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-conf+backend")) {
+		if (!vstrcmp(*av, "-conf+backend")) {
 			ARGN(vl, av, 1);
 			haproxy_store_conf(h, av[1], 1);
 			av++;
 			continue;
 		}
 
-		if (!strcmp(*av, "-expectexit")) {
+		if (!vstrcmp(*av, "-expectexit")) {
 			h->expect_exit = strtoul(av[1], NULL, 0);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-start")) {
+		if (!vstrcmp(*av, "-start")) {
 			haproxy_start(h);
 			continue;
 		}
-		if (!strcmp(*av, "-wait")) {
+		if (!vstrcmp(*av, "-wait")) {
 			haproxy_wait(h);
 			continue;
 		}

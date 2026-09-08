@@ -249,12 +249,12 @@ cmd_vsm(CMD_ARGS)
 		return;
 	}
 
-	AZ(strcmp(av[0], "vsm"));
+	AZ(vstrcmp(av[0], "vsm"));
 	av++;
 
 	VTC_CHECK_NAME(vl, av[0], "VSM", 'm');
 	VTAILQ_FOREACH(m, &vsms, list) {
-		if (!strcmp(m->name, av[0]))
+		if (!vstrcmp(m->name, av[0]))
 			break;
 	}
 
@@ -267,20 +267,20 @@ cmd_vsm(CMD_ARGS)
 	for (; *av != NULL; av++) {
 		if (vtc_error)
 			break;
-		if (!strcmp(*av, "-attach")) {
+		if (!vstrcmp(*av, "-attach")) {
 			vsm_attach(m);
 			continue;
 		}
-		if (!strcmp(*av, "-detach")) {
+		if (!vstrcmp(*av, "-detach")) {
 			vsm_detach(m);
 			continue;
 		}
-		if (!strcmp(*av, "-expect-status")) {
+		if (!vstrcmp(*av, "-expect-status")) {
 			vsm_expect_status(m, av[1]);
 			av++;
 			continue;
 		}
-		if (!strcmp(*av, "-n")) {
+		if (!vstrcmp(*av, "-n")) {
 			if (av[1] == NULL)
 				vtc_fatal(m->vl, "Missing -n argument");
 			REPLACE(m->n_arg, av[1]);

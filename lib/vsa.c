@@ -157,13 +157,16 @@
  * I have decided to try to contain this crap in this single
  * source-file, with only minimum leakage into the rest of Varnish,
  * which will only know of pointers to "struct suckaddr", the naming
- * of which is my of the historical narrative above.
+ * of which is my considered opinion of the historical narrative above.
  *
  * And you don't need to take my word for this, you can see it all
  * in various #include files on your own system.   If you are on
  * a Solaris derivative, don't miss the beautiful horror hidden in the
  * variant definition of IPv6 addresses between kernel and userland.
  *
+ * Update (2026): Gosh, who could ever have foreseen that IPv4
+ * mapped into IPv6 would become a mess ?   Now we normalize
+ * all such VSAs to IPv4 at the VSA level.
  */
 
 struct suckaddr {
@@ -188,6 +191,52 @@ const struct suckaddr *bogo_ip = &bogo_ip_vsa;
 static struct suckaddr bogo_ip6_vsa;
 const struct suckaddr *bogo_ip6 = &bogo_ip6_vsa;
 
+static const uint8_t map4_0_80[10] = {0,0,0,0,0,0,0,0,0,0};
+static const uint8_t map4_0_104[13] = {0,0,0,0,0,0,0,0,0,0,0,0,0};
+static const uint8_t map4_0_96[12] = {0,0,0,0,0,0,0,0,0,0,0x00,0x00};
+static const uint8_t map4_ffff_96[12] = {0,0,0,0,0,0,0,0,0,0,0xff,0xff};
+
+/*
+ * Rewrite IPv4-in-IPv6 suckaddr's in place
+ */
+
+static void
+vsa_normalize(struct suckaddr *sua)
+{
+	CHECK_OBJ_NOTNULL(sua, SUCKADDR_MAGIC);
+	if (sua->u.sa.sa_family != PF_INET6)
+		return;
+	uint8_t *p6 = (void*)&sua->u.sa6.sin6_addr;
+
+	if (vmemcmp(p6, map4_0_80, sizeof map4_0_80)) {
+		// A "normal" IPv6 address.
+		return;
+	}
+
+	if (!vmemcmp(p6, map4_0_104, sizeof map4_0_104)) {
+		// IPv6 loopback
+		// IPv6 "any"
+		// IPv4-compat-IPv6, but IPv4 is in 0/8 IPv4
+		return;
+	}
+
+	if (!vmemcmp(p6, map4_0_96, sizeof map4_0_96)) {
+		// RFC3513 2.5.5 - convert
+	} else if (!vmemcmp(p6, map4_ffff_96, sizeof map4_ffff_96)) {
+		// RFC4291 2.5.5.2 - convert
+	} else {
+		return;
+	}
+
+	uint8_t *p4 = (void*)&sua->u.sa4.sin_addr;
+	sua->u.sa.sa_family = PF_INET;
+	vmemcpy(p4, p6 + 12, 4);
+
+#ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
+	sua->u.sa.sa_len = sizeof(sua->u.sa4);
+#endif
+}
+
 void
 VSA_Init(void)
 {
@@ -207,7 +256,7 @@ VSA_GetPtr(const struct suckaddr *sua, const unsigned char ** dst)
 	AN(dst);
 	if (sua == NULL)
 		return (-1);
-	CHECK_OBJ_NOTNULL(sua, SUCKADDR_MAGIC);
+	CHECK_OBJ(sua, SUCKADDR_MAGIC);
 
 	switch (sua->u.sa.sa_family) {
 	case PF_INET:
@@ -228,8 +277,8 @@ VSA_GetPtr(const struct suckaddr *sua, const unsigned char ** dst)
  * Return the size of a struct sockaddr in a struck suckaddr
  * or 0 if unknown family
  */
-static inline
-socklen_t sua_len(const struct sockaddr *sa)
+static inline socklen_t
+sua_len(const struct sockaddr *sa)
 {
 
 	switch (sa->sa_family) {
@@ -279,12 +328,12 @@ VSA_BuildFAP(void *d, sa_family_t fam, const void *a, unsigned al,
 		if (a != NULL && al > 0) {
 			if (al != sizeof(sin4.sin_addr))
 				break;
-			memcpy(&sin4.sin_addr, a, al);
+			vmemcpy(&sin4.sin_addr, a, al);
 		}
 		if (p != NULL && pl > 0) {
 			if (pl != sizeof(sin4.sin_port))
 				break;
-			memcpy(&sin4.sin_port, p, pl);
+			vmemcpy(&sin4.sin_port, p, pl);
 		}
 		return (VSA_Build(d, &sin4, sizeof sin4));
 	case PF_INET6:
@@ -293,12 +342,12 @@ VSA_BuildFAP(void *d, sa_family_t fam, const void *a, unsigned al,
 		if (a != NULL && al > 0) {
 			if (al != sizeof(sin6.sin6_addr))
 				break;
-			memcpy(&sin6.sin6_addr, a, al);
+			vmemcpy(&sin6.sin6_addr, a, al);
 		}
 		if (p != NULL && pl > 0) {
 			if (pl != sizeof(sin6.sin6_port))
 				break;
-			memcpy(&sin6.sin6_port, p, pl);
+			vmemcpy(&sin6.sin6_port, p, pl);
 		}
 		return (VSA_Build(d, &sin6, sizeof sin6));
 	default:
@@ -331,10 +380,12 @@ VSA_Build(void *d, const void *s, unsigned sal)
 	INIT_OBJ(sua, SUCKADDR_MAGIC);
 	switch (l) {
 	case sizeof sua->u.sa4:
-		memcpy(&sua->u.sa4, s, l);
+		vmemcpy(&sua->u.sa4, s, l);
+		assert(sua->u.sa.sa_family == PF_INET);
 		break;
 	case sizeof sua->u.sa6:
-		memcpy(&sua->u.sa6, s, l);
+		vmemcpy(&sua->u.sa6, s, l);
+		assert(sua->u.sa.sa_family == PF_INET6);
 		break;
 	default:
 		WRONG("VSA protocol vs. size");
@@ -342,6 +393,7 @@ VSA_Build(void *d, const void *s, unsigned sal)
 #ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
 	sua->u.sa.sa_len = (unsigned char)l;
 #endif
+	vsa_normalize(sua);
 	return (sua);
 }
 
@@ -379,7 +431,7 @@ VSA_Compare(const struct suckaddr *sua1, const struct suckaddr *sua2)
 
 	CHECK_OBJ_NOTNULL(sua1, SUCKADDR_MAGIC);
 	CHECK_OBJ_NOTNULL(sua2, SUCKADDR_MAGIC);
-	return (memcmp(sua1, sua2, vsa_suckaddr_len));
+	return (vmemcmp(sua1, sua2, vsa_suckaddr_len));
 }
 
 int
@@ -394,10 +446,10 @@ VSA_Compare_IP(const struct suckaddr *sua1, const struct suckaddr *sua2)
 
 	switch (sua1->u.sa.sa_family) {
 	case PF_INET:
-		return (memcmp(&sua1->u.sa4.sin_addr,
+		return (vmemcmp(&sua1->u.sa4.sin_addr,
 		    &sua2->u.sa4.sin_addr, sizeof(struct in_addr)));
 	case PF_INET6:
-		return (memcmp(&sua1->u.sa6.sin6_addr,
+		return (vmemcmp(&sua1->u.sa6.sin6_addr,
 		    &sua2->u.sa6.sin6_addr, sizeof(struct in6_addr)));
 	default:
 		WRONG("Just plain insane");
@@ -413,7 +465,7 @@ VSA_Clone(const struct suckaddr *sua)
 	assert(VSA_Sane(sua));
 	sua2 = calloc(1, vsa_suckaddr_len);
 	XXXAN(sua2);
-	memcpy(sua2, sua, vsa_suckaddr_len);
+	vmemcpy(sua2, sua, vsa_suckaddr_len);
 	return (sua2);
 }
 
@@ -451,9 +503,11 @@ VSA_get ## which ## name(int fd, void *d, size_t l)	\
 	INIT_OBJ(sua, SUCKADDR_MAGIC);			\
 	sl = sizeof(sua->u);				\
 	r = get ## which ## name(fd, &sua->u.sa, &sl);	\
-							\
-	return (r == 0 ? sua : NULL);			\
-}							\
+	if (r != 0)					\
+		return (NULL);				\
+	vsa_normalize(sua);				\
+	return (sua);					\
+}
 
 VSA_getname(sock)
 VSA_getname(peer)

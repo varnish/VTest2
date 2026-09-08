@@ -58,9 +58,6 @@ vtest: ${DEPS} ${SRCS}
 		${OBJS} \
 		${LIBS}
 
-test: vtest
-	env PATH=`pwd`:${PATH} vtest tests/*.vtc tests/tls/*.vtc
-
 #######################################################################
 # target for vtest with builtin varnish support (needs varnish source tree)
 

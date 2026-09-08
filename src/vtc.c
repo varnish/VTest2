@@ -112,7 +112,7 @@ find_cmd(const char *name)
 	VTAILQ_FOREACH(cp, &icmd_list, list) {
 		CHECK_OBJ_NOTNULL(cp, ICMDS_MAGIC);
 		CHECK_OBJ_NOTNULL(cp->cmd, CMDS_MAGIC);
-		if (!strcmp(name, cp->cmd->name))
+		if (!vstrcmp(name, cp->cmd->name))
 			return (cp->cmd);
 	}
 
@@ -127,7 +127,7 @@ find_cmd(const char *name)
 	VTAILQ_FOREACH(cp, &icmd_list, list) {
 		CHECK_OBJ_NOTNULL(cp, ICMDS_MAGIC);
 		CHECK_OBJ_NOTNULL(cp->cmd, CMDS_MAGIC);
-		if (!strcmp(name, cp->cmd->name))
+		if (!vstrcmp(name, cp->cmd->name))
 			return (cp->cmd);
 	}
 	return (NULL);
@@ -222,7 +222,7 @@ macro_def_int(const char *name, macro_f *func, const char *fmt, va_list ap)
 	char buf[2048];
 
 	VTAILQ_FOREACH(m, &macro_list, list)
-		if (!strcmp(name, m->name))
+		if (!vstrcmp(name, m->name))
 			break;
 	if (m == NULL) {
 		ALLOC_OBJ(m, MACRO_MAGIC);
@@ -319,7 +319,7 @@ macro_undef(struct vtclog *vl, const char *instance, const char *name)
 
 	PTOK(pthread_mutex_lock(&macro_mtx));
 	VTAILQ_FOREACH(m, &macro_list, list)
-		if (!strcmp(name, m->name))
+		if (!vstrcmp(name, m->name))
 			break;
 	if (m != NULL) {
 		if (!vtc_stop)
@@ -346,7 +346,7 @@ macro_isdef(const char *instance, const char *name)
 
 	PTOK(pthread_mutex_lock(&macro_mtx));
 	VTAILQ_FOREACH(m, &macro_list, list)
-		if (!strcmp(name, m->name))
+		if (!vstrcmp(name, m->name))
 			break;
 	PTOK(pthread_mutex_unlock(&macro_mtx));
 
@@ -378,7 +378,7 @@ macro_cat(struct vtclog *vl, struct vsb *vsb, const char *b, const char *e)
 	PTOK(pthread_mutex_lock(&macro_mtx));
 	VTAILQ_FOREACH(m, &macro_list, list) {
 		CHECK_OBJ_NOTNULL(m, MACRO_MAGIC);
-		if (!strcmp(argv[1], m->name))
+		if (!vstrcmp(argv[1], m->name))
 			break;
 	}
 	if (m != NULL) {
@@ -600,14 +600,21 @@ parse_string(struct vtclog *vl, void *priv, const char *spec)
  *         Process STRING as a specification, NUMBER times.
  *
  * This works inside all specification strings
+ *
+ * The special macro ${n} is expanded in STRING to the
+ * the iteration [1…NUMBER].
  */
 
-		if (!strcmp(token_s[0], "loop")) {
+		if (!vstrcmp(token_s[0], "loop")) {
 			n = strtoul(token_s[1], NULL, 0);
 			for (m = 0; m < n && !vtc_error && !vtc_stop; m++) {
 				vtc_log(vl, 4, "Loop #%u", m);
-				parse_string(vl, priv, token_s[2]);
+				macro_def(vl, NULL, "n", "%d", m + 1);
+				token_exp = macro_expand(vl, token_s[2]);
+				parse_string(vl, priv, VSB_data(token_exp));
+				VSB_destroy(&token_exp);
 			}
+			macro_def(vl, NULL, "n", "${n}");
 			continue;
 		}
 
@@ -615,7 +622,7 @@ parse_string(struct vtclog *vl, void *priv, const char *spec)
 		if (vl->cmds != NULL) {
 			for (cp = vl->cmds; cp->name != NULL; cp++) {
 				CHECK_OBJ_NOTNULL(cp, CMDS_MAGIC);
-				if (!strcmp(token_s[0], cp->name))
+				if (!vstrcmp(token_s[0], cp->name))
 					break;
 			}
 		}
@@ -769,6 +776,8 @@ exec_file(const char *fn, const char *script, const char *tmpdir,
 	AZ(fclose(f));
 
 	vtc_stop = 0;
+
+	macro_def(vltop, NULL, "n", "${n}");
 
 	vtc_thread = pthread_self();
 	parse_string(vltop, NULL, script);
