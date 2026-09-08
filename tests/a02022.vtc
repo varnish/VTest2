@@ -1,6 +1,6 @@
 vtest "H/1 -> H/2 upgrade"
 
-feature cmd "nghttp --version | grep -qE 'nghttp2/([2-9]|1.[5-9]|1.4[89])'"
+feature cmd "nghttp --version | grep -qE 'nghttp2/([2-9]|1.(6[5-9]|[789][0-9]|[1-9][0-9]{2,}))'"
 
 server s1 {
 	rxreq
