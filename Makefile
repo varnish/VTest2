@@ -17,7 +17,8 @@ DEPS=	lib/*.h \
 	src/*.h \
 	src/tbl/*.h \
 	src/teken_state.h \
-	src/vtc_h2_dectbl.h
+	src/vtc_h2_dectbl.h \
+	version.h
 
 FLAGS=	-O2 -Wall -Werror
 
@@ -57,6 +58,17 @@ vtest: ${DEPS} ${SRCS}
 		${INCS} \
 		${OBJS} \
 		${LIBS}
+
+.PHONY: version.h
+
+version.h:
+	@git describe >$@.tt && \
+	    (echo '#define VTEST_VERSION "'`cat $@.tt`'"' >$@.t) && \
+	    diff $@ $@.t >/dev/null 2>&1 || mv -f $@.t $@
+	@rm -f $@.t $@.tt
+
+src/vtc_main.o: version.h
+
 
 #######################################################################
 # Test target
