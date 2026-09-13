@@ -162,17 +162,48 @@ static VTAILQ_HEAD(,extension) extension_list =
 void
 add_extension(const char *name)
 {
-	int fd;
 	struct extension *ep;
+	pid_t pid, rv;
+	int status;
 
 	AN(name);
-	fd = open(name, O_RDONLY);
-	if (fd < 0) {
-		fprintf(stderr, "Cannot open extension file '%s': %s\n",
-		    name, strerror(errno));
+
+	/* we try the dlopen in a subprocess to not taint the vtest main
+	 * process. Not using VSUB because that does too much. vfork() would be
+	 * nice for this purpose, but it's broken and not portable
+	 */
+	if ((pid = fork()) < 0) {
+		fprintf(stderr, "fork() failed: %s (%d)\n",
+		    strerror(errno), errno);
 		exit(2);
 	}
-	closefd(&fd);
+	if (pid == 0) {
+		void *dlp = dlopen(name, RTLD_NOW);
+		if (dlp != NULL)
+			exit (0);
+		fprintf(stderr, "%s\n", dlerror());
+		exit (2);
+	}
+	do {
+		rv = waitpid(pid, &status, 0);
+		if (rv < 0 && errno != EINTR) {
+			fprintf(stderr, "waitpid() failed: %s (%d)\n",
+			    strerror(errno), errno);
+			exit (2);
+		}
+	} while (rv < 0);
+
+	if (!WIFEXITED(status)) {
+		fprintf(stderr, "unexpected exit of dlopen test process: %d\n",
+		    WEXITSTATUS(status));
+		exit (2);
+	}
+
+	// child process has output the error
+	if (WEXITSTATUS(status) == 2)
+		exit (2);
+
+	assert(WEXITSTATUS(status) == 0);
 
 	ALLOC_OBJ(ep, EXTENSION_MAGIC);
 	AN(ep);
