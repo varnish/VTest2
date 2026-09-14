@@ -69,8 +69,8 @@ version.h:
 	@if git describe >$@.tt ; then \
 	    (echo '#define VTEST_VERSION "'`cat $@.tt`'"' >$@.t) && \
 	    diff $@ $@.t >/dev/null 2>&1 || mv -f $@.t $@ ; \
-	else ; \
-	    echo '#define VTEST_VERSION "$(VERSION_NOGIT)"' >$@
+	else \
+	    echo '#define VTEST_VERSION "$(VERSION_NOGIT)"' >$@ ; \
 	fi
 	@rm -f $@.t $@.tt
 
