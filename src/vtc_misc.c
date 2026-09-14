@@ -507,8 +507,6 @@ abstract_uds_works(void)
  * ignore_unknown_macro
  *        Do not fail the test if a string of the form ${...} is not
  *        recognized as a macro.
- * persistent_storage
- *        A compile flag was present indicating the deprecated persistent storage.
  * tls_client
  *        Varnish was built with client-side TLS support
  * tls_1_3
@@ -518,22 +516,6 @@ abstract_uds_works(void)
  * tls_raw_staple
  *        The TLS library staples OCSP responses verbatim, allowing
  *        tests to staple arbitrary data (OpenSSL < 3.6)
- * coverage
- *        A compile flag was present indicating code coverage enabled.
- * asan
- *        A compile flag was present indicating the address sanitizer.
- * msan
- *        A compile flag was present indicating the memory sanitizer.
- * tsan
- *        A compile flag was present indicating the thread sanitizer.
- * ubsan
- *        A compile flag was present indicating the undefined behavior sanitizer.
- * sanitizer
- *        A compile flag was present indicating a sanitizer.
- * workspace_emulator
- *        A compile flag was present indicating the workspace emulator.
- * witness
- *        A compile flag was present indicating the lock witness.
  * abstract_uds
  *        Creation of an abstract unix domain socket succeeded.
  * disable_aslr
@@ -548,60 +530,6 @@ abstract_uds_works(void)
  * misspelled macro to fail silently. You should only need it if you must
  * run a test with strings of the form "${...}".
  */
-
-#if ENABLE_COVERAGE
-static const unsigned coverage = 1;
-#else
-static const unsigned coverage = 0;
-#endif
-
-#if ENABLE_ASAN
-static const unsigned asan = 1;
-#else
-static const unsigned asan = 0;
-#endif
-
-#if ENABLE_MSAN
-static const unsigned msan = 1;
-#else
-static const unsigned msan = 0;
-#endif
-
-#if ENABLE_TSAN
-static const unsigned tsan = 1;
-#else
-static const unsigned tsan = 0;
-#endif
-
-#if ENABLE_UBSAN
-static const unsigned ubsan = 1;
-#else
-static const unsigned ubsan = 0;
-#endif
-
-#if ENABLE_SANITIZER
-static const unsigned sanitizer = 1;
-#else
-static const unsigned sanitizer = 0;
-#endif
-
-#if ENABLE_WORKSPACE_EMULATOR
-static const unsigned workspace_emulator = 1;
-#else
-static const unsigned workspace_emulator = 0;
-#endif
-
-#if ENABLE_WITNESS
-static const unsigned witness = 1;
-#else
-static const unsigned witness = 0;
-#endif
-
-#if WITH_PERSISTENT_STORAGE
-static const unsigned with_persistent_storage = 1;
-#else
-static const unsigned with_persistent_storage = 0;
-#endif
 
 void v_matchproto_(cmd_f)
 cmd_feature(CMD_ARGS)
@@ -650,18 +578,9 @@ cmd_feature(CMD_ARGS)
 		FEATURE("user_vcache", getpwnam("vcache") != NULL);
 		FEATURE("group_varnish", getgrnam("varnish") != NULL); // XXX remove?
 		FEATURE("group_vinyl", getgrnam("vinyl") != NULL);
-		FEATURE("persistent_storage", with_persistent_storage);
 		FEATURE("tls_client", 1);
 		FEATURE("tls_1_3", 1);
 		FEATURE("tls", 1);
-		FEATURE("coverage", coverage);
-		FEATURE("asan", asan);
-		FEATURE("msan", msan);
-		FEATURE("tsan", tsan);
-		FEATURE("ubsan", ubsan);
-		FEATURE("sanitizer", sanitizer);
-		FEATURE("workspace_emulator", workspace_emulator);
-		FEATURE("witness", witness);
 		FEATURE("abstract_uds", abstract_uds_works());
 		FEATURE("tls", 1);
 #if defined(TLS1_3_VERSION) || OPENSSL_VERSION_NUMBER >= 0x10101000L
