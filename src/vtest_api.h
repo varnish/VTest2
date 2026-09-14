@@ -115,3 +115,12 @@ unsigned macro_isdef(const char *instance, const char *name);
 struct vsb *macro_expand(struct vtclog *vl, const char *text);
 struct vsb *macro_expandf(struct vtclog *vl, const char *, ...)
     v_printflike_(2, 3);
+
+enum i_mode_where_e {
+	top_builddir,
+	top_srcdir
+};
+
+// basically build_path
+void i_mode_add(enum i_mode_where_e where, const char *subdir, const char *pfx,
+    const char *sfx);
