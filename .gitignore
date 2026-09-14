@@ -4,6 +4,7 @@ src/teken_state.h
 src/vtc_h2_dectbl.h
 version.h
 vtest
+vtest.pc
 
 # droppings from submodule use
 tests/*.log

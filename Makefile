@@ -2,7 +2,7 @@
 #
 # VERSION to use when not building from git.
 # Update when tagging a new version
-VERSION_NOGIT =	VTest2-1.0-trunk-nogit
+PACKAGE_VERSION =	VTest2-1.0-trunk-nogit
 
 PYTHON	?=	python3
 PYTHON	?=	python
@@ -10,6 +10,8 @@ PYTHON	?=	python
 VARNISH_SRC ?= /home/phk/Varnish/trunk/varnish-cache
 
 AWK	?=	awk
+
+SED	?=	sed
 
 SRCS=	src/*.c \
 	lib/*.c
@@ -70,7 +72,7 @@ version.h:
 	    (echo '#define VTEST_VERSION "'`cat $@.tt`'"' >$@.t) && \
 	    diff $@ $@.t >/dev/null 2>&1 || mv -f $@.t $@ ; \
 	else \
-	    echo '#define VTEST_VERSION "$(VERSION_NOGIT)"' >$@ ; \
+	    echo '#define VTEST_VERSION "$(PACKAGE_VERSION)"' >$@ ; \
 	fi
 	@rm -f $@.t $@.tt
 
@@ -84,11 +86,17 @@ test: vtest
 	env PATH=`pwd`:${PATH} vtest tests/*.vtc
 
 #######################################################################
+# pkg-config
+vtest.pc: vtest.pc.in
+	${SED} <$< >$@.tmp "s:@DESTDIR@:$(DESTDIR):; s:@PACKAGE_VERSION@:$(PACKAGE_VERSION):;"
+	mv $@.tmp $@
+
+#######################################################################
 # Install target.
 # 1. You must set DESTDIR
 # 2. DESTDIR must have 'include' and 'bin' subdirs.
 
-install: vtest
+install: vtest vtest.pc
 	@[ ! -z "${DESTDIR}" ] || \
 		( echo "You must set DESTDIR" 1>&2 ; exit 2)
 	@[ -d "${DESTDIR}" ] || \
@@ -105,6 +113,11 @@ install: vtest
 	rm -f ${DESTDIR}/include/vtest_api.h
 	cp src/vtest_api.h ${DESTDIR}/include/vtest_api.h
 	chmod 444 ${DESTDIR}/include/vtest_api.h
+
+	mkdir -p ${DESTDIR}/lib/pkgconfig
+	rm -f ${DESTDIR}/lib/pkgconfig/vtest.pc
+	cp vtest.pc ${DESTDIR}/lib/pkgconfig
+	chmod 444 ${DESTDIR}/lib/pkgconfig/vtest.pc
 
 #######################################################################
 # Implicit rule used in a sub-process by the rules above, and makes use
