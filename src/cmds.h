@@ -60,6 +60,7 @@ CMD_TOP(varnish)
 #endif
 #ifdef VTEST_WITH_VTC_VINYL
 CMD_TOP(vinyl)
+CMD_TOP(vinyl_builtwith)
 #endif
 CMD_TOP(varnishtest)
 #ifdef VTEST_WITH_VTC_VSM
