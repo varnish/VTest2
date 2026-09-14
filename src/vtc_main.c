@@ -658,15 +658,17 @@ i_mode(void)
 	/* varnish build trees may carry vinyl-named directories */
 	build_path(topbuild, "bin", "varnish", "", vsb);
 	build_path(topbuild, "bin", "vinyl", "", vsb);
+	VSB_putc(vsb, ':');
 #endif
 
 #ifdef VTEST_WITH_VTC_VINYL
 	build_path(topbuild, "bin", "vinyl", "", vsb);
+	VSB_putc(vsb, ':');
 #endif
 
 #ifdef WITH_CONTRIB
-	VSB_putc(vsb, ':');
 	build_path(topsrc, "", "contrib", "", vsb);
+	VSB_putc(vsb, ':');
 #endif
 
 	struct i_mode_cfg *cfg;
@@ -676,7 +678,7 @@ i_mode(void)
 		VSB_putc(vsb, ':');
 	}
 
-	VSB_printf(vsb, ":%s", getenv("PATH"));
+	VSB_printf(vsb, "%s", getenv("PATH"));
 	AZ(VSB_finish(vsb));
 	AZ(putenv(strdup(VSB_data(vsb))));
 
