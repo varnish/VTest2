@@ -1,4 +1,8 @@
 #
+#
+# VERSION to use when not building from git.
+# Update when tagging a new version
+VERSION_NOGIT =	VTest2-1.0-trunk-nogit
 
 PYTHON	?=	python3
 PYTHON	?=	python
@@ -62,9 +66,12 @@ vtest: ${DEPS} ${SRCS}
 .PHONY: version.h
 
 version.h:
-	@git describe >$@.tt && \
+	@if git describe >$@.tt ; then \
 	    (echo '#define VTEST_VERSION "'`cat $@.tt`'"' >$@.t) && \
-	    diff $@ $@.t >/dev/null 2>&1 || mv -f $@.t $@
+	    diff $@ $@.t >/dev/null 2>&1 || mv -f $@.t $@ ; \
+	else ; \
+	    echo '#define VTEST_VERSION "$(VERSION_NOGIT)"' >$@
+	fi
 	@rm -f $@.t $@.tt
 
 src/vtc_main.o: version.h
