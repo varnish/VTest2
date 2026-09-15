@@ -2,7 +2,7 @@
 #
 # VERSION to use when not building from git.
 # Update when tagging a new version
-PACKAGE_VERSION =	VTest2-2.1
+PACKAGE_VERSION =	VTest2-2.1-trunk-nogit
 
 PYTHON	?=	python3
 PYTHON	?=	python
