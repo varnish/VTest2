@@ -163,70 +163,19 @@ void
 add_extension(const char *name)
 {
 	struct extension *ep;
-	pid_t pid, rv;
-	int status;
 
 	AN(name);
 
-	/* we try the dlopen in a subprocess to not taint the vtest main
-	 * process. Not using VSUB because that does too much. vfork() would be
-	 * nice for this purpose, but it's broken and not portable
-	 */
-	if ((pid = fork()) < 0) {
-		fprintf(stderr, "fork() failed: %s (%d)\n",
-		    strerror(errno), errno);
-		exit(2);
-	}
-	if (pid == 0) {
-		void *dlp = dlopen(name, RTLD_NOW);
-		if (dlp != NULL)
-			exit (0);
+	if (! dlopen(name, RTLD_NOW)) {
 		fprintf(stderr, "%s\n", dlerror());
 		exit (2);
 	}
-	do {
-		rv = waitpid(pid, &status, 0);
-		if (rv < 0 && errno != EINTR) {
-			fprintf(stderr, "waitpid() failed: %s (%d)\n",
-			    strerror(errno), errno);
-			exit (2);
-		}
-	} while (rv < 0);
-
-	if (!WIFEXITED(status)) {
-		fprintf(stderr, "unexpected exit of dlopen test process: %d\n",
-		    WEXITSTATUS(status));
-		exit (2);
-	}
-
-	// child process has output the error
-	if (WEXITSTATUS(status) == 2)
-		exit (2);
-
-	assert(WEXITSTATUS(status) == 0);
 
 	ALLOC_OBJ(ep, EXTENSION_MAGIC);
 	AN(ep);
 	ep->name = strdup(name);
 	AN(ep->name);
 	VTAILQ_INSERT_HEAD(&extension_list, ep, list);
-}
-
-static int
-init_extensions(void)
-{
-	struct extension *ep;
-
-	VTAILQ_FOREACH(ep, &extension_list, list) {
-		CHECK_OBJ_NOTNULL(ep, EXTENSION_MAGIC);
-		void *dlp = dlopen(ep->name, RTLD_NOW);
-		if (dlp == NULL) {
-			vtc_log(vltop, 1, "Cannot dlopen '%s': %s\n",
-			    ep->name, dlerror());
-			return (1);
-		}
-	}
-	return (0);
 }
 
 /**********************************************************************
@@ -767,10 +716,6 @@ exec_file(const char *fn, const char *script, const char *tmpdir,
 	vtc_log(vltop, 1, "TEST %s starting", fn);
 
 	init_cmd_list();
-	if (init_extensions()) {
-		vtc_error = 2;
-		return (fail_out());
-	}
 	init_macro();
 	init_server();
 	init_syslog();
