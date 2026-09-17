@@ -79,7 +79,14 @@ git format-patch -o "${patchdir}" "${tagbase}-squash"
  
 # apply
 cd "${TOP}"
-git am "${patchdir}"/*
+if ! git am "${patchdir}"/* ; then
+	set +x
+	echo
+	echo IMPORTANT: fix up git am, then call
+	echo echo "${NEWBASE}" \>"${BASEF}"
+	echo git commit -m \"Updated code from vinyl-cache\" "${BASEF}"
+	exit
+fi
 echo "${NEWBASE}" >"${BASEF}"
 git commit -m 'Updated code from varnish-cache' "${BASEF}"
 rm -rf "${patchdir}"

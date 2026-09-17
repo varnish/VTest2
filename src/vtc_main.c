@@ -55,6 +55,8 @@
 #include "vtim.h"
 #include "vct.h"
 
+#include "version.h"
+
 static const char *argv0;
 
 struct buf {
@@ -217,6 +219,7 @@ usage(void)
 	fprintf(stderr, FMT, "-q", "Quiet mode: report only failures");
 	fprintf(stderr, FMT, "-t duration", "Time tests out after this long");
 	fprintf(stderr, FMT, "-v", "Verbose mode: always report test log");
+	fprintf(stderr, FMT, "-V", "print version and exit");
 	exit(1);
 }
 
@@ -945,7 +948,7 @@ usual_arguments(int argc, char *const *argv)
 	int ch;
 	uintmax_t bufsiz;
 
-	while ((ch = getopt(argc, argv, "b:CD:E:hij:kLln:p:qt:vW")) != -1) {
+	while ((ch = getopt(argc, argv, "b:CD:E:hij:kLln:p:qt:vVW")) != -1) {
 		switch (ch) {
 		case 'b':
 			if (VNUM_2bytes(optarg, &bufsiz, 0)) {
@@ -1002,6 +1005,9 @@ usual_arguments(int argc, char *const *argv)
 		case 't':
 			vtc_maxdur = strtoul(optarg, NULL, 0);
 			break;
+		case 'V':
+			printf("%s\n", VTEST_VERSION);
+			exit(0);
 		case 'v':
 			if (vtc_verbosity < 2)
 				vtc_verbosity++;

@@ -1,4 +1,8 @@
 #
+#
+# VERSION to use when not building from git.
+# Update when tagging a new version
+PACKAGE_VERSION =	VTest2-2.1-trunk-nogit
 
 PYTHON	?=	python3
 PYTHON	?=	python
@@ -6,6 +10,8 @@ PYTHON	?=	python
 VARNISH_SRC ?= /home/phk/Varnish/trunk/varnish-cache
 
 AWK	?=	awk
+
+SED	?=	sed
 
 SRCS=	src/*.c \
 	lib/*.c
@@ -17,7 +23,8 @@ DEPS=	lib/*.h \
 	src/*.h \
 	src/tbl/*.h \
 	src/teken_state.h \
-	src/vtc_h2_dectbl.h
+	src/vtc_h2_dectbl.h \
+	version.h
 
 FLAGS=	-O2 -Wall -Werror
 
@@ -58,26 +65,19 @@ vtest: ${DEPS} ${SRCS}
 		${OBJS} \
 		${LIBS}
 
-#######################################################################
-# target for vtest with builtin varnish support (needs varnish source tree)
+.PHONY: version.h
 
-varnishtest:	${DEPS} ${SRCS}
+version.h:
+	@if git describe >$@.tt ; then \
+	    (echo '#define VTEST_VERSION "'`cat $@.tt`'"' >$@.t) && \
+	    diff $@ $@.t >/dev/null 2>&1 || mv -f $@.t $@ ; \
+	else \
+	    echo '#define VTEST_VERSION "$(PACKAGE_VERSION)"' >$@ ; \
+	fi
+	@rm -f $@.t $@.tt
 
-	@[ -d "${VARNISH_SRC}" ] || \
-		( echo "${VARNISH_SRC} directory missing" 1>&2 ; exit 2)
+src/vtc_main.o: version.h
 
-	${MAKE} \
-		 DEFINES="-DVTEST_WITH_VTC_VARNISH -DVTEST_WITH_VTC_LOGEXPECT" \
-		 `for s in $(SRCS); do echo $${s%.c}.o;done`
-
-	${CC} \
-		${LDFLAGS} \
-		-o varnishtest \
-		${OBJS} \
-		${LIBS} \
-		-L${VARNISH_SRC}/lib/libvarnishapi/.libs \
-		-Wl,--rpath,${VARNISH_SRC}/lib/libvarnishapi/.libs \
-		-lvarnishapi
 
 #######################################################################
 # Test target
@@ -86,11 +86,17 @@ test: vtest
 	env PATH=`pwd`:${PATH} vtest tests/*.vtc
 
 #######################################################################
+# pkg-config
+vtest.pc: vtest.pc.in
+	${SED} <$< >$@.tmp "s:@DESTDIR@:$(DESTDIR):; s:@PACKAGE_VERSION@:$(PACKAGE_VERSION):;"
+	mv $@.tmp $@
+
+#######################################################################
 # Install target.
 # 1. You must set DESTDIR
 # 2. DESTDIR must have 'include' and 'bin' subdirs.
 
-install: vtest
+install: vtest vtest.pc
 	@[ ! -z "${DESTDIR}" ] || \
 		( echo "You must set DESTDIR" 1>&2 ; exit 2)
 	@[ -d "${DESTDIR}" ] || \
@@ -107,6 +113,11 @@ install: vtest
 	rm -f ${DESTDIR}/include/vtest_api.h
 	cp src/vtest_api.h ${DESTDIR}/include/vtest_api.h
 	chmod 444 ${DESTDIR}/include/vtest_api.h
+
+	mkdir -p ${DESTDIR}/lib/pkgconfig
+	rm -f ${DESTDIR}/lib/pkgconfig/vtest.pc
+	cp vtest.pc ${DESTDIR}/lib/pkgconfig
+	chmod 444 ${DESTDIR}/lib/pkgconfig/vtest.pc
 
 #######################################################################
 # Implicit rule used in a sub-process by the rules above, and makes use

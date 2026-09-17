@@ -57,9 +57,11 @@ CMD_TOP(syslog)
 CMD_TOP(tunnel)
 #ifdef VTEST_WITH_VTC_VARNISH
 CMD_TOP(varnish)
+CMD_TOP(vcache_builtwith)
 #endif
 #ifdef VTEST_WITH_VTC_VINYL
 CMD_TOP(vinyl)
+CMD_TOP(vcache_builtwith)
 #endif
 CMD_TOP(varnishtest)
 #ifdef VTEST_WITH_VTC_VSM

@@ -162,40 +162,20 @@ static VTAILQ_HEAD(,extension) extension_list =
 void
 add_extension(const char *name)
 {
-	int fd;
 	struct extension *ep;
 
 	AN(name);
-	fd = open(name, O_RDONLY);
-	if (fd < 0) {
-		fprintf(stderr, "Cannot open extension file '%s': %s\n",
-		    name, strerror(errno));
-		exit(2);
+
+	if (! dlopen(name, RTLD_NOW)) {
+		fprintf(stderr, "%s\n", dlerror());
+		exit (2);
 	}
-	closefd(&fd);
 
 	ALLOC_OBJ(ep, EXTENSION_MAGIC);
 	AN(ep);
 	ep->name = strdup(name);
 	AN(ep->name);
 	VTAILQ_INSERT_HEAD(&extension_list, ep, list);
-}
-
-static int
-init_extensions(void)
-{
-	struct extension *ep;
-
-	VTAILQ_FOREACH(ep, &extension_list, list) {
-		CHECK_OBJ_NOTNULL(ep, EXTENSION_MAGIC);
-		void *dlp = dlopen(ep->name, RTLD_NOW);
-		if (dlp == NULL) {
-			vtc_log(vltop, 1, "Cannot dlopen '%s': %s\n",
-			    ep->name, dlerror());
-			return (1);
-		}
-	}
-	return (0);
 }
 
 /**********************************************************************
@@ -736,10 +716,6 @@ exec_file(const char *fn, const char *script, const char *tmpdir,
 	vtc_log(vltop, 1, "TEST %s starting", fn);
 
 	init_cmd_list();
-	if (init_extensions()) {
-		vtc_error = 2;
-		return (fail_out());
-	}
 	init_macro();
 	init_server();
 	init_syslog();
