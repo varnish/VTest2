@@ -606,6 +606,18 @@ build_path(const char *topdir, const char *subdir,
 	AZ(closedir(dir));
 }
 
+struct i_mode_cfg {
+	unsigned			magic;
+#define I_MODE_CFG_MAGIC		0xbc9d1820
+	enum i_mode_where_e		where;
+	const char 			*subdir;
+	const char 			*pfx;
+	const char 			*sfx;
+	VTAILQ_ENTRY(i_mode_cfg)	list;
+};
+
+static VTAILQ_HEAD(, i_mode_cfg) i_mode_head = VTAILQ_HEAD_INITIALIZER(i_mode_head);
+
 static void
 i_mode(void)
 {
@@ -656,6 +668,14 @@ i_mode(void)
 	VSB_putc(vsb, ':');
 	build_path(topsrc, "", "contrib", "", vsb);
 #endif
+
+	struct i_mode_cfg *cfg;
+	VTAILQ_FOREACH(cfg, &i_mode_head, list) {
+		const char *top = cfg->where == top_builddir ? topbuild : topsrc;
+		build_path(top, cfg->subdir, cfg->pfx, cfg->sfx, vsb);
+		VSB_putc(vsb, ':');
+	}
+
 	VSB_printf(vsb, ":%s", getenv("PATH"));
 	AZ(VSB_finish(vsb));
 	AZ(putenv(strdup(VSB_data(vsb))));
@@ -679,6 +699,25 @@ i_mode(void)
 	 */
 	AZ(putenv(strdup("MALLOC_CONF=abort:true,junk:true")));
 }
+
+// to be called by extensions to register i_mode paths
+// strings will be referenced
+void
+i_mode_add(enum i_mode_where_e where, const char *subdir, const char *pfx,
+    const char *sfx)
+{
+	struct i_mode_cfg *i;
+
+	ALLOC_OBJ(i, I_MODE_CFG_MAGIC);
+	AN(i);
+	i->where = where;
+	i->subdir = subdir;
+	i->pfx = pfx;
+	i->sfx = sfx;
+
+	VTAILQ_INSERT_TAIL(&i_mode_head, i, list);
+}
+
 
 /**********************************************************************
  * Figure out what IP related magic
