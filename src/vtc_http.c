@@ -1198,7 +1198,6 @@ cmd_http_rxchunk(CMD_ARGS)
 
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
-	ONLY_CLIENT(hp, av);
 
 	i = http_rxchunk(hp);
 	if (i == 0) {
