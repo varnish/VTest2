@@ -47,26 +47,12 @@ CMD_TOP(client)
 CMD_TOP(feature)
 CMD_TOP(filewrite)
 CMD_TOP(haproxy)
-#ifdef VTEST_WITH_VTC_LOGEXPECT
-CMD_TOP(logexpect)
-#endif
 CMD_TOP(process)
 CMD_TOP(server)
 CMD_TOP(setenv)
 CMD_TOP(syslog)
 CMD_TOP(tunnel)
-#ifdef VTEST_WITH_VTC_VARNISH
-CMD_TOP(varnish)
-CMD_TOP(vcache_builtwith)
-#endif
-#ifdef VTEST_WITH_VTC_VINYL
-CMD_TOP(vinyl)
-CMD_TOP(vcache_builtwith)
-#endif
 CMD_TOP(varnishtest)
-#ifdef VTEST_WITH_VTC_VSM
-CMD_TOP(vsm)
-#endif
 CMD_TOP(vtest)
 #undef CMD_TOP
 
