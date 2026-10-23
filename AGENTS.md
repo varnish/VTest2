@@ -1,65 +1,87 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for AI coding agents (and humans) working in this repository.
 
 ## Overview
 
-VTest2 is a standalone HTTP testing program, originally derived from Varnish's varnishtest. It's designed to test HTTP clients, servers, and proxies using a domain-specific scripting language (`.vtc` files). This is the second iteration that maintains better synchronization with Varnish-Cache while being usable independently.
+VTest2 is a standalone HTTP testing program, originally derived from Varnish's varnishtest. It tests HTTP clients, servers, and proxies using a domain-specific scripting language (`.vtc` files).
+
+### Where this fork sits
+
+- **Upstream:** vinyl-cache's VTest2, `https://code.vinyl-cache.org/vtest/VTest2` (git remote usually named `vinylvtest`).
+- **This repo:** `github.com/varnish/VTest2`, the Varnish Software fork. Its main addition is TLS support (`vtc_tls.c`, `tls_config`/`tls_handshake`, `tls.*` variables, `tls*` feature checks), plus some Varnish-specific adjustments.
+- **Consumer:** the Varnish repo vendors this one as the git submodule `bin/vinyltest/vtest2`. Varnish-specific commands (`varnish`, `logexpect`, `vsm`, `vcache_builtwith`) do not live here. They are in that repo's `libvtest_ext_varnish` extension.
 
 ## Build Commands
 
-### Basic Build
 ```bash
-make vtest          # Build without Varnish support
-make test           # Build and run all tests
+make vtest          # Build vtest
+make test           # Build and run tests/*.vtc
 make clean          # Remove build artifacts
-```
-
-### Build with Varnish Support
-```bash
-make varnishtest VARNISH_SRC=/path/to/varnish-cache
+make install DESTDIR=/prefix  # Install vtest, vtest_api.h and vtest.pc (pkg-config)
 ```
 
 ### Generated Files
-The build process generates two files that must exist before compilation:
+The build generates these files before compilation:
 - `src/teken_state.h` - Generated from `src/sequences` using awk
 - `src/vtc_h2_dectbl.h` - Generated from `src/tbl/vhp_huffman.h` using Python
+- `version.h` - Generated from `git describe`. It is a phony target, so it is always regenerated.
 
-### Syncing with Varnish-Cache
-```bash
-make update         # Pull updates from Varnish-Cache repository
-                    # Set VARNISHSRC env var to use local repo instead of cloning
-```
+## Porting from upstream
+
+New upstream commits are cherry-picked from vinyl-cache's VTest2 onto a catch-up branch (e.g. `vinyl-catchup-YYYY-MM-DD`) and merged via a PR.
+
+- One commit per upstream commit. Never squash, so bisecting and seeing which upstream commits were merged stays easy.
+- Keep the upstream author and message. Drop any `(cherry picked from ...)` line and end with this two-line trailer:
+  ```
+  Upstream: https://code.vinyl-cache.org/vtest/VTest2/commit/<full-sha>
+  Port: exact
+  ```
+  If the content differs from upstream in any way (including conflict resolutions around downstream code), use:
+  ```
+  Port: adjusted -- <terse one-line reason>
+  ```
+- When resolving conflicts, never take upstream's whole file (`git checkout --theirs`). This fork carries downstream changes in shared files, e.g. `vtc_tls_init()` in `vtc_main.c` or the TLS feature checks in `vtc_misc.c`. Edit the conflicting hunk only, then diff against `HEAD` to confirm nothing downstream was lost.
+- `make update` (`tools/sync/`) imports `lib/` code from varnish-cache. This fork does not track upstream's vinyl-ized version of these scripts.
+- Record user-visible changes in `CHANGES.md` (newest first).
 
 ## Code Architecture
 
 ### Directory Structure
-- **lib/** - Shared utility library code from Varnish-Cache (vsb, vqueue, vtcp, etc.)
+- **lib/** - Shared utility library code synced from Varnish-Cache/vinyl-cache (vsb, vqueue, vtcp, etc.)
 - **src/** - Core VTest implementation
-  - `vtc_main.c` - Entry point, test execution orchestration, parallel test runner
-  - `vtc.c` - Core test execution, macro expansion, command dispatch
+  - `vtc_main.c` - Entry point, test execution orchestration, parallel test runner, `-i` mode
+  - `vtc.c` - Core test execution, macro expansion, command dispatch, extension loading
   - `vtc_http.c/vtc_http.h` - HTTP/1.1 client/server implementation with session operations abstraction
   - `vtc_http2.c` - HTTP/2 support
-  - `vtc_tls.c` - TLS/SSL support (OpenSSL-based)
+  - `vtc_tls.c` - TLS/SSL support (OpenSSL-based, downstream-only)
   - `vtc_client.c` - Client command implementation
   - `vtc_server.c` - Server command implementation
   - `vtc_process.c` - Process spawning and management with terminal emulation
   - `vtc_barrier.c` - Synchronization primitives for tests
-  - `vtc_logexp.c` - Log expectation matching (conditional, Varnish-specific)
-  - `vtc_varnish.c` - Varnish-specific testing (conditional compilation)
   - `vtc_haproxy.c` - HAProxy-specific testing
+  - `vtc_misc.c` - Miscellaneous commands, including `feature`
+  - `vtest_api.h` - Public API for extensions (installed)
+  - `cmds.h` - X-macro command table
   - `builtin_cert.h` - Default self-signed certificate (CN=example.com)
-  - `vtc_asn_gentm.c` - OpenSSL compatibility layer for older versions
   - `tbl/` - Table-driven code generation (H2 frames, settings, errors, TLS alerts/protocols)
-- **tests/** - Test suite (`.vtc` files)
-- **tools/sync/** - Scripts for syncing code with Varnish-Cache
+- **tests/** - Test suite: `a[0-9]{5}.vtc` (run by `make test`) and `tests/tls/`
+- **tools/sync/** - Scripts for syncing `lib/` code from Varnish-Cache
+- **CHANGES.md** - Changelog, newest first
+- **TLS-IMPL.md** - TLS implementation notes
 
 ### Command System
 Commands are registered via `cmds.h` using X-macros:
 - **CMD_GLOBAL**: Available everywhere (barrier, delay, shell, include)
-- **CMD_TOP**: Top-level test commands (client, server, process, varnish, haproxy, etc.)
+- **CMD_TOP**: Top-level test commands (client, server, process, haproxy, etc.)
 
-The extensible command system allows loading shared libraries via `-E extension_shlib` to add custom commands at runtime using `add_cmd()`.
+### Extensions
+Product-specific commands come from shared-library extensions loaded with `-E extension_shlib`. Extensions are `dlopen()`ed at startup, in the main process, and register themselves from a `__attribute__((constructor))` function using the `vtest_api.h` API:
+- `add_cmd(name, func, flags)` - Register a command
+- `extmacro_def(name, func, fmt, ...)` - Define a global macro
+- `i_mode_add(where, subdir, pfx, sfx)` - Add build-tree directories to `$PATH` for `-i` mode
+
+The old `VTEST_WITH_VTC_*` compile-time switches are gone. A monolithic build links its extension in instead (e.g. Varnish links `libvtest_ext_varnish` with `--no-as-needed`).
 
 ### Core Concepts
 
@@ -77,7 +99,7 @@ VTest has a powerful macro expansion system supporting:
 HTTP clients and servers share common session handling code (`vtc_sess.c`, `sess_process()`) with pluggable connect/disconnect callbacks. This enables code reuse between client, server, and tunneling modes.
 
 **Session Operations Pattern:**
-VTest2 uses a session operations abstraction (`struct sess_ops` in `vtc_http.h`) that enables transparent switching between plain TCP and TLS connections. The `struct http` contains operation pointers (`poll`, `read`, `write`, `close`) that dispatch to either plain file descriptor operations (`http_fd_so`) or TLS operations (`tlsconn_so`). This allows all HTTP I/O code to remain unchanged whether using plain or encrypted connections.
+VTest2 uses a session operations abstraction (`struct sess_ops` in `vtc_http.h`) that enables transparent switching between plain TCP and TLS connections. The `struct http` contains operation pointers (`poll`, `read`, `write`, `close`) that dispatch to either plain file descriptor operations (`http_fd_so`) or TLS operations (`tlsconn_so`). This allows all HTTP I/O code to remain unchanged whether using plain or encrypted connections. Upstream calls `read()`/`write()`/`poll()` on the fd directly, which is a frequent source of port conflicts.
 
 **Terminal Emulation:**
 Process commands include a full terminal emulator (`teken.c`) supporting VT220 escape sequences for testing interactive programs and screen output.
@@ -145,13 +167,6 @@ client c1 {
 - **Linux**: Uses `dlopen()` by name for extensions. Primary development/testing platform.
 - **macOS**: Bound but non-listening sockets timeout instead of refusing, so bad_backend_fd is closed. TLS implementation compiles successfully but may encounter VTest2 runtime issues unrelated to TLS (file descriptor management in `VSUB_closefrom()`). Recommend testing TLS features on Linux.
 - **FreeBSD jails**: localhost/127.0.0.1 becomes the jail's IP
-
-## Conditional Compilation
-
-Several features are conditionally compiled:
-- `VTEST_WITH_VTC_VARNISH` - Varnish integration (vtc_varnish.c)
-- `VTEST_WITH_VTC_LOGEXPECT` - Log expectation matching
-- `VTEST_WITH_VTC_VSM` - Varnish Shared Memory support
 
 ## TLS/SSL Support
 
@@ -223,8 +238,6 @@ This design cleanly separates TLS concerns from HTTP protocol handling.
 ## Development Notes
 
 - Code in `lib/` is synced from Varnish-Cache - don't modify directly
-- Extensions use `add_cmd(name, function, flags)` to register new commands
-- Test names in `tests/` follow pattern `a[0-9]{5}.vtc`
 - Use `leave_temp` options (`-l`, `-L`) to preserve test directories for debugging
 - The codebase uses Varnish's utility libraries: miniobj for object checking, vsb for string buffers, vqueue for linked lists
 - TLS support requires OpenSSL; version detection happens at compile-time via `OPENSSL_VERSION_NUMBER`

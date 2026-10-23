@@ -1049,7 +1049,7 @@ cmd_process(CMD_ARGS)
 		VTAILQ_FOREACH_SAFE(p, &processes, list, p2) {
 			if (p->pid > 0) {
 				process_kill(p, "TERM");
-				sleep(1);
+				sleep(2);
 				if (p->pid > 0)
 					process_kill(p, "KILL");
 			}

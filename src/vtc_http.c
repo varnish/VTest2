@@ -1198,8 +1198,8 @@ cmd_http_rxchunk(CMD_ARGS)
 
 	(void)vl;
 	CAST_OBJ_NOTNULL(hp, priv, HTTP_MAGIC);
-	ONLY_CLIENT(hp, av);
 
+	AZ(vstrcmp(av[0], "rxchunk"));
 	i = http_rxchunk(hp);
 	if (i == 0) {
 		ll = hp->rx_p - hp->body;
